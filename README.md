@@ -13,4 +13,4 @@ Projet de classification pour le diagnostic de l'appendicite chez l'enfant avec 
 - `.github/workflows/` : CI/CD
 
 ## Installation
-...
+télécharger les données:
