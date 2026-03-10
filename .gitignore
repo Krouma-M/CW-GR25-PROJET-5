@@ -1,0 +1,30 @@
+# Données
+data/
+*.csv
+*.xlsx
+*.pkl
+*.joblib
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+*.so
+*.egg-info/
+dist/
+build/
+
+# Environnement virtuel
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Notebooks (optionnel : si vous voulez ignorer les sorties)
+# notebooks/.ipynb_checkpoints/
