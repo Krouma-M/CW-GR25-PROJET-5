@@ -1,13 +1,12 @@
-pandas
-numpy
-scikit-learn
-matplotlib
-seaborn
-jupyter
-ucimlrepo
-streamlit
-shap
-lightgbm
-catboost
-joblib
-pytest
+asgiref
+certifi
+charset-normalizer
+Django>= 4.2
+docopt
+idna
+pipreqs
+requests
+sqlparse
+tzdata
+urllib3
+yarg
