@@ -14,6 +14,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+venv
 
 # Environnement virtuel
 venv/
