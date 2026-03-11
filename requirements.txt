@@ -15,6 +15,7 @@ scikit-learn
 lightgbm
 catboost
 ucimlrepo
+shap
 joblib
 base64
 shap
