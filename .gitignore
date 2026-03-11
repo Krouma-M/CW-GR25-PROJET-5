@@ -1,9 +1,4 @@
 # Données
-data/
-*.csv
-*.xlsx
-*.pkl
-*.joblib
 # Python
 __pycache__/
 *.pyc
