@@ -10,3 +10,12 @@ sqlparse
 tzdata
 urllib3
 yarg
+pandas
+scikit-learn
+lightgbm
+catboost
+ucimlrepo
+shap
+joblib
+base64
+shap

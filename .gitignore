@@ -1,9 +1,4 @@
 # Données
-data/
-*.csv
-*.xlsx
-*.pkl
-*.joblib
 # Python
 __pycache__/
 *.pyc
@@ -14,6 +9,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+venv
 
 # Environnement virtuel
 venv/
