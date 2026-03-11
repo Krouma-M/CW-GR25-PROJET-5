@@ -12,8 +12,8 @@ from sklearn.metrics import (
 )
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
-import lightgbm as lgb
-import catboost as cb
+import lightgbm as lgb # pyright: ignore[reportMissingImports]
+import catboost as cb # pyright: ignore[reportMissingImports]
 
 print("Script lancé...")
 # Charger les données
