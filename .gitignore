@@ -24,3 +24,4 @@ env/
 
 # Notebooks (optionnel : si vous voulez ignorer les sorties)
 # notebooks/.ipynb_checkpoints/
+catboost_info
