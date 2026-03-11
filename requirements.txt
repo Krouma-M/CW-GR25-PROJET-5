@@ -15,3 +15,4 @@ scikit-learn
 lightgbm
 catboost
 ucimlrepo
+shap
