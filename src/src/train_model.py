@@ -16,7 +16,6 @@ import lightgbm as lgb
 import catboost as cb
 
 print("Script lancé...")
-
 # Charger les données
 df = pd.read_csv("data/raw/appendicitis.csv")
 
@@ -53,7 +52,6 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # -------------------------------
 # 1. Random Forest avec GridSearchCV
-print("\nEntraînement Random Forest...")
 rf = RandomForestClassifier(random_state=42)
 param_grid_rf = {
     "n_estimators": [100, 200, 300],
@@ -68,7 +66,6 @@ y_pred_rf = best_rf.predict(X_test)
 
 # -------------------------------
 # 2. LightGBM avec GridSearchCV
-print("Entraînement LightGBM...")
 lgbm = lgb.LGBMClassifier(random_state=42)
 param_grid_lgb = {
     "n_estimators": [100, 200, 300],
@@ -82,7 +79,6 @@ y_pred_lgb = best_lgb.predict(X_test)
 
 # -------------------------------
 # 3. CatBoost avec GridSearchCV
-print("Entraînement CatBoost...")
 cat = cb.CatBoostClassifier(verbose=0, random_state=42)
 param_grid_cat = {
     "iterations": [100, 200, 300],
@@ -96,7 +92,7 @@ y_pred_cat = best_cat.predict(X_test)
 
 
 # -------------------------------
-# Fonction d'évaluation
+# Fonction d’évaluation
 def evaluate_model(name, y_true, y_pred):
     print(f"\n--- {name} ---")
     print("Accuracy:", round(accuracy_score(y_true, y_pred), 3))
