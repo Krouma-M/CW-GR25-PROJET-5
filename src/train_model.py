@@ -14,6 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 import lightgbm as lgb
 import catboost as cb
+import joblib
 
 print("Script lancé...")
 
@@ -116,3 +117,9 @@ print("\nMeilleurs paramètres RF:", grid_rf.best_params_)
 print("Meilleurs paramètres LGBM:", grid_lgb.best_params_)
 print("Meilleurs paramètres CatBoost:", grid_cat.best_params_)
 print("Fin du script")
+
+
+# Choisir le meilleur modèle (ex: best_cat)
+best_model = best_cat  # ou best_rf, best_lgb selon vos scores
+joblib.dump(best_model, "appendicite_pediatric/models/model_appendicite.pkl")
+print("Modèle sauvegardé")
