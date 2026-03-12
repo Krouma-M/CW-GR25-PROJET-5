@@ -2,6 +2,8 @@
 Evaluation module for model performance assessment.
 """
 
+import os
+import sys
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -12,6 +14,8 @@ from sklearn.metrics import (
     classification_report,
 )
 import pandas as pd
+
+sys.path.append(os.path.dirname(__file__))
 
 
 def evaluate_model(y_true, y_pred, y_pred_proba=None, model_name="Model"):
@@ -35,7 +39,6 @@ def evaluate_model(y_true, y_pred, y_pred_proba=None, model_name="Model"):
         "f1": f1_score(y_true, y_pred),
     }
 
-    # ROC-AUC si probabilités disponibles
     if y_pred_proba is not None:
         metrics["roc_auc"] = roc_auc_score(y_true, y_pred_proba)
 
@@ -104,9 +107,45 @@ def print_comparison(df):
     print(df.to_string())
     print("=" * 60)
 
-    # Best model par métrique
     print("\nMeilleur modèle par métrique:")
     for col in df.columns:
         best_idx = df[col].idxmax()
         best_val = df[col].max()
         print(f"  {col}: {best_idx} ({best_val:.3f})")
+
+
+if __name__ == "__main__":
+    import joblib
+    from data_processing import load_data, preprocess_data
+
+    # Charger les données
+    df = load_data()
+    X_train, X_test, y_train, y_test, _ = preprocess_data(df)
+
+    # Charger les modèles sauvegardés
+    models = {
+        "Random Forest": joblib.load("models/Random Forest.pkl"),
+        "LightGBM"     : joblib.load("models/LightGBM.pkl"),
+        "CatBoost"     : joblib.load("models/CatBoost.pkl"),
+    }
+
+    # Évaluer chaque modèle
+    results = []
+    for name, model in models.items():
+        y_pred = model.predict(X_test)
+        y_proba = model.predict_proba(X_test)[:, 1]
+        metrics = evaluate_model(y_test, y_pred, y_proba, name)
+        print_evaluation(metrics)
+        results.append(metrics)
+
+    # Comparer tous les modèles
+    df_results = compare_models(results)
+    print_comparison(df_results)
+# Trouver le meilleur modèle selon Recall
+best_model_name = df_results["recall"].idxmax()
+best_model = joblib.load(f"models/{best_model_name}.pkl")
+
+# Sauvegarder comme modèle final
+joblib.dump(best_model, "models/best_model.pkl")
+print(f" Meilleur modèle : {best_model_name}")
+print(f" Sauvegardé : models/best_model.pkl")

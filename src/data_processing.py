@@ -23,12 +23,41 @@ def load_data(filepath="data/raw/appendicitis.csv"):
     return df
 
 
+def optimize_memory(df):
+    """
+    Optimise l'utilisation mémoire en convertissant les types de données.
+    float64 → float32, int64 → int32
+
+    Args:
+        df: Input DataFrame
+
+    Returns:
+        DataFrame: DataFrame optimisé
+    """
+    before = df.memory_usage(deep=True).sum() / 1024**2
+
+    for col in df.columns:
+        if df[col].dtype == "float64":
+            df[col] = df[col].astype("float32")
+        elif df[col].dtype == "int64":
+            df[col] = df[col].astype("int32")
+
+    after = df.memory_usage(deep=True).sum() / 1024**2
+
+    print(f"Mémoire avant : {before:.2f} MB")
+    print(f"Mémoire après : {after:.2f} MB")
+    print(f"Gain : {before - after:.2f} MB")
+
+    return df
+
+
 def preprocess_data(df, target_col="Diagnosis", test_size=0.2, random_state=42):
     """
     Preprocess the dataset:
     - Handle missing target values
     - Encode categorical variables
     - Impute missing values
+    - Optimize memory
     - Split into train/test sets
 
     Args:
@@ -62,6 +91,9 @@ def preprocess_data(df, target_col="Diagnosis", test_size=0.2, random_state=42):
     print(f"Valeurs manquantes après imputation: {X.isnull().sum().sum()}")
     print(f"Taille du dataset: {X.shape}")
     print(f"Classes: {le_target.classes_}")
+
+    # Optimiser la mémoire
+    X = optimize_memory(X)
 
     # Split train/test
     X_train, X_test, y_train, y_test = train_test_split(
@@ -100,13 +132,14 @@ def get_data_summary(df):
         "missing_values": df.isnull().sum().to_dict(),
         "dtypes": df.dtypes.to_dict(),
         "numeric_columns": df.select_dtypes(include=[np.number]).columns.tolist(),
-        "categorical_columns": df.select_dtypes(include=["object"]).columns.tolist(),
+        "categorical_columns": df.select_dtypes(
+            include=["object"]
+        ).columns.tolist(),
     }
     return summary
 
 
 if __name__ == "__main__":
-    # Test the preprocessing
     df = load_data()
     print("Data loaded successfully!")
     print(f"Shape: {df.shape}")
