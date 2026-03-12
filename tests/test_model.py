@@ -95,3 +95,4 @@ def test_data_loaded():
     assert len(X_test) > 0
     assert X_train.isnull().sum().sum() == 0
     print(" test_data_loaded passé !")
+    
