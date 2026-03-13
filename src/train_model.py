@@ -1,124 +1,127 @@
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, precision_score, recall_score
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
-from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+import pandas as pd
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    roc_auc_score,
+    precision_score,
+    recall_score,
+)
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
 import lightgbm as lgb
 import catboost as cb
-import joblib
+
+sys.path.append(os.path.dirname(__file__))
+from data_processing import load_data, preprocess_data, optimize_memory
 
 print("Script lancé...")
 
-# Charger les données brutes (sans aucun preprocessing)
+# Charger les données
 df = pd.read_csv("data/raw/appendicitis.csv")
 
 # Supprimer les lignes où la cible est manquante
 df = df.dropna(subset=["Diagnosis"])
 
-# Séparer X et y (y est la cible)
+# Vérifie le nom de la colonne cible
 target_col = "Diagnosis"
-y = df[target_col].values
+
+# Encoder la cible
+le_target = LabelEncoder()
+y = le_target.fit_transform(df[target_col].astype(str))
+
 X = df.drop(columns=[target_col])
 
-# Encoder la cible en 0/1 (appendicitis / no appendicitis)
-le_target = LabelEncoder()
-y = le_target.fit_transform(y)
-print("Classes:", le_target.classes_)
+# Encoder les variables catégorielles
+for col in X.select_dtypes(include=["object"]).columns:
+    le = LabelEncoder()
+    X[col] = X[col].fillna("unknown")
+    X[col] = le.fit_transform(X[col].astype(str))
 
-# Identifier les colonnes numériques et catégorielles dans les données brutes
-# On utilise les types d'origine avant tout encodage
-numeric_features = X.select_dtypes(include=[np.number]).columns.tolist()
-categorical_features = X.select_dtypes(include=['object', 'category']).columns.tolist()
+# Imputer les valeurs manquantes avec la médiane
+imputer = SimpleImputer(strategy="median")
+X = pd.DataFrame(imputer.fit_transform(X), columns=X.columns)
 
-print("Colonnes numériques :", numeric_features)
-print("Colonnes catégorielles :", categorical_features)
+print(f"Valeurs manquantes après imputation: {X.isnull().sum().sum()}")
+print(f"Taille du dataset: {X.shape}")
+print(f"Classes: {le_target.classes_}")
 
-# Créer le préprocesseur
-preprocessor = ColumnTransformer([
-    ('num', Pipeline([
-        ('imputer', SimpleImputer(strategy='median')),   # imputation des valeurs manquantes numériques
-        ('scaler', StandardScaler())                     # normalisation
-    ]), numeric_features),
-    ('cat', Pipeline([
-        ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),  # remplacer NaN par 'missing'
-        ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False)) # one-hot encoding
-    ]), categorical_features)
-])
-
-# Division train/test (avant tout traitement pour éviter le data leakage)
+# Split train/test
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# Définir les modèles à tester
-models = {
-    'RandomForest': RandomForestClassifier(random_state=42),
-    'LightGBM': lgb.LGBMClassifier(random_state=42, verbose=-1),
-    'CatBoost': cb.CatBoostClassifier(verbose=0, random_state=42)
+# -------------------------------
+# 1. Random Forest avec GridSearchCV
+print("\nEntraînement Random Forest...")
+rf = RandomForestClassifier(random_state=42)
+param_grid_rf = {
+    "n_estimators": [100, 200, 300],
+    "max_depth": [None, 5, 10],
+    "min_samples_split": [2, 5],
+    "min_samples_leaf": [1, 2],
 }
+grid_rf = GridSearchCV(rf, param_grid_rf, cv=5, scoring="f1", n_jobs=-1)
+grid_rf.fit(X_train, y_train)
+best_rf = grid_rf.best_estimator_
+y_pred_rf = best_rf.predict(X_test)
 
-# Grilles d'hyperparamètres (simplifiées pour l'exemple)
-param_grids = {
-    'RandomForest': {
-        'classifier__n_estimators': [100, 200],
-        'classifier__max_depth': [None, 10],
-    },
-    'LightGBM': {
-        'classifier__n_estimators': [100, 200],
-        'classifier__learning_rate': [0.05, 0.1],
-    },
-    'CatBoost': {
-        'classifier__iterations': [100, 200],
-        'classifier__depth': [4, 6],
-    }
+# -------------------------------
+# 2. LightGBM avec GridSearchCV
+print("Entraînement LightGBM...")
+lgbm = lgb.LGBMClassifier(random_state=42)
+param_grid_lgb = {
+    "n_estimators": [100, 200, 300],
+    "max_depth": [-1, 5, 10],
+    "learning_rate": [0.05, 0.1, 0.2],
 }
-joblib.dump(X.columns.tolist(), "models/columns.pkl")
-best_estimators = {}
+grid_lgb = GridSearchCV(lgbm, param_grid_lgb, cv=5, scoring="f1", n_jobs=-1)
+grid_lgb.fit(X_train, y_train)
+best_lgb = grid_lgb.best_estimator_
+y_pred_lgb = best_lgb.predict(X_test)
 
-for name in models:
-    print(f"\nRecherche d'hyperparamètres pour {name}...")
-    pipeline = Pipeline([
-        ('preprocessor', preprocessor),
-        ('classifier', models[name])
-    ])
-    
-    grid = GridSearchCV(
-        pipeline, 
-        param_grids[name], 
-        cv=5, 
-        scoring='f1', 
-        n_jobs=-1,
-        verbose=1
-    )
-    grid.fit(X_train, y_train)
-    
-    best_estimators[name] = grid.best_estimator_
-    y_pred = grid.predict(X_test)
-    print(f"Meilleurs paramètres pour {name}: {grid.best_params_}")
-    print(f"F1 score sur test: {f1_score(y_test, y_pred):.3f}")
+# -------------------------------
+# 3. CatBoost avec GridSearchCV
+print("Entraînement CatBoost...")
+cat = cb.CatBoostClassifier(verbose=0, random_state=42)
+param_grid_cat = {
+    "iterations": [100, 200, 300],
+    "depth": [4, 6, 8],
+    "learning_rate": [0.05, 0.1, 0.2],
+}
+grid_cat = GridSearchCV(cat, param_grid_cat, cv=5, scoring="f1", n_jobs=-1)
+grid_cat.fit(X_train, y_train)
+best_cat = grid_cat.best_estimator_
+y_pred_cat = best_cat.predict(X_test)
 
-# Choisir le meilleur modèle (par exemple celui avec le meilleur F1 sur validation)
-# Pour simplifier, on prend CatBoost (car vos précédents résultats montraient qu'il était bon)
-best_model_name = 'CatBoost'  # ou vous pouvez comparer les scores
-best_pipeline = best_estimators[best_model_name]
 
-print(f"\nMeilleur modèle: {best_model_name}")
-print("Évaluation finale sur test:")
-y_pred = best_pipeline.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print("Precision:", precision_score(y_test, y_pred))
-print("Recall:", recall_score(y_test, y_pred))
-print("F1:", f1_score(y_test, y_pred))
-print("ROC-AUC:", roc_auc_score(y_test, best_pipeline.predict_proba(X_test)[:,1]))
+# -------------------------------
+# Fonction d'évaluation
+def evaluate_model(name, y_true, y_pred):
+    print(f"\n--- {name} ---")
+    print("Accuracy:", round(accuracy_score(y_true, y_pred), 3))
+    print("Precision:", round(precision_score(y_true, y_pred), 3))
+    print("Recall:", round(recall_score(y_true, y_pred), 3))
+    print("F1:", round(f1_score(y_true, y_pred), 3))
+    print("ROC-AUC:", round(roc_auc_score(y_true, y_pred), 3))
 
-# Sauvegarder le pipeline complet (préprocesseur + modèle)
-joblib.dump(best_pipeline, "models/pipeline.pkl")
-print("Pipeline sauvegardé dans models/pipeline.pkl")
 
-# Sauvegarder aussi l'encodeur de la cible (pour décoder les prédictions si besoin)
-joblib.dump(le_target, "models/label_encoder_target.pkl")
-print("Ordre des colonnes:", X.columns.tolist())
+# Évaluer les trois modèles
+evaluate_model("Random Forest", y_test, y_pred_rf)
+evaluate_model("LightGBM", y_test, y_pred_lgb)
+evaluate_model("CatBoost", y_test, y_pred_cat)
+
+# Afficher les meilleurs hyperparamètres
+print("\nMeilleurs paramètres RF:", grid_rf.best_params_)
+print("Meilleurs paramètres LGBM:", grid_lgb.best_params_)
+print("Meilleurs paramètres CatBoost:", grid_cat.best_params_)
+print("Fin du script")
+
+
+# Choisir le meilleur modèle (ex: best_cat)
+best_model = best_cat  # ou best_rf, best_lgb selon vos scores
+joblib.dump(best_model, "appendicite_pediatric/models/model_appendicite.pkl")
+print("Modèle sauvegardé")
