@@ -1,31 +1,21 @@
 import pytest
-import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import LabelEncoder
-from sklearn.impute import SimpleImputer
 from sklearn.metrics import recall_score, f1_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
 import lightgbm as lgb
 import catboost as cb
+import joblib
 import os
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+from data_processing import load_data, preprocess_data
 
 def prepare_data():
-    df = pd.read_csv("data/raw/appendicitis.csv")
-    df = df.dropna(subset=["Diagnosis"])
-    le_target = LabelEncoder()
-    y = le_target.fit_transform(df["Diagnosis"].astype(str))
-    X = df.drop(columns=["Diagnosis"])
-    for col in X.select_dtypes(include=["object"]).columns:
-        le = LabelEncoder()
-        X[col] = X[col].fillna("unknown")
-        X[col] = le.fit_transform(X[col].astype(str))
-    imputer = SimpleImputer(strategy="median")
-    X = pd.DataFrame(imputer.fit_transform(X), columns=X.columns)
-    return train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    df = load_data()
+    X_train, X_test, y_train, y_test, _ = preprocess_data(df)
+    return X_train, X_test, y_train, y_test
 
 # TEST 1 — Random Forest avec GridSearch
 def test_random_forest_gridsearch():
@@ -95,3 +85,19 @@ def test_data_loaded():
     assert len(X_test) > 0
     assert X_train.isnull().sum().sum() == 0
     print(" test_data_loaded passé !")
+<<<<<<< HEAD
+    
+=======
+
+# TEST 5 — Vérifier que best_model.pkl existe
+def test_best_model_exists():
+    model_path = os.path.join(
+        os.path.dirname(__file__), '..', 'models', 'best_model.pkl'
+    )
+    if os.path.exists(model_path):
+        model = joblib.load(model_path)
+        assert model is not None
+        print(" test_best_model_exists passé !")
+    else:
+        pytest.skip("best_model.pkl pas encore généré !")
+>>>>>>> e88d100 (les src et test)
