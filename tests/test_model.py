@@ -85,9 +85,6 @@ def test_data_loaded():
     assert len(X_test) > 0
     assert X_train.isnull().sum().sum() == 0
     print(" test_data_loaded passé !")
-<<<<<<< HEAD
-    
-=======
 
 # TEST 5 — Vérifier que best_model.pkl existe
 def test_best_model_exists():
@@ -100,4 +97,3 @@ def test_best_model_exists():
         print(" test_best_model_exists passé !")
     else:
         pytest.skip("best_model.pkl pas encore généré !")
->>>>>>> e88d100 (les src et test)

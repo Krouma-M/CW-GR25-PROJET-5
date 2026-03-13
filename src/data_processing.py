@@ -9,6 +9,16 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 
 
+# Colonnes de fuite de données — connues APRÈS le diagnostic, pas au triage
+LEAKAGE_COLS = [
+    'Management',           # décision thérapeutique → après diagnostic
+    'Severity',             # sévérité classifiée → après diagnostic
+    'Length_of_Stay',       # durée hospitalisation → après diagnostic
+    'Perforation',          # constatée en chirurgie
+    'Appendicular_Abscess', # constatée en chirurgie
+]
+
+
 def load_data(filepath="data/raw/appendicitis.csv"):
     """
     Load the appendicitis dataset from CSV file.
@@ -55,6 +65,7 @@ def preprocess_data(df, target_col="Diagnosis", test_size=0.2, random_state=42):
     """
     Preprocess the dataset:
     - Handle missing target values
+    - Remove leakage columns (known only after diagnosis)
     - Encode categorical variables
     - Impute missing values
     - Optimize memory
@@ -76,7 +87,13 @@ def preprocess_data(df, target_col="Diagnosis", test_size=0.2, random_state=42):
     le_target = LabelEncoder()
     y = le_target.fit_transform(df[target_col].astype(str))
 
-    X = df.drop(columns=[target_col])
+    # Supprimer la cible ET les colonnes de fuite
+    cols_to_drop = [target_col] + [c for c in LEAKAGE_COLS if c in df.columns]
+    X = df.drop(columns=cols_to_drop)
+
+    removed = [c for c in LEAKAGE_COLS if c in df.columns]
+    print(f"Colonnes de fuite supprimées : {removed}")
+    print(f"Features restantes : {X.shape[1]}")
 
     # Encoder les variables catégorielles
     for col in X.select_dtypes(include=["object"]).columns:
