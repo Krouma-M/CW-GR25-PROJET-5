@@ -73,7 +73,7 @@ if "probabilite" not in st.session_state:
 # -------------------------------------------------------------------
 # DONNÉES SHAP (images pré-générées)
 # -------------------------------------------------------------------
-SHAP_DIR = "figures/shap"
+SHAP_DIR = "reports/figures/shap"
 shap_images = [
     {"label": "CatBoost — Résumé (Beeswarm)",    "path": f"{SHAP_DIR}/catboost_summary.png"},
     {"label": "CatBoost — Importance globale",   "path": f"{SHAP_DIR}/catboost_importance.png"},
