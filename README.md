@@ -15,12 +15,6 @@ Projet de classification pour le diagnostic de l'appendicite chez l'enfant avec 
 - `tests/` : tests unitaires
 - `.github/workflows/` : CI/CD
 
-## Installation
-télécharger les données:
-
-> Application d'aide à la décision clinique permettant aux pédiatres de diagnostiquer l'appendicite chez l'enfant grâce au Machine Learning et à l'explicabilité SHAP.
-
----
 
 ## 📋 Description du projet
 
