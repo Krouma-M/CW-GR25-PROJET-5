@@ -14,7 +14,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 import lightgbm as lgb
 import catboost as cb
-import joblib
+
+sys.path.append(os.path.dirname(__file__))
+from data_processing import load_data, preprocess_data, optimize_memory
 
 print("Script lancé...")
 
