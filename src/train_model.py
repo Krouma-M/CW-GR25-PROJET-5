@@ -123,5 +123,5 @@ print("Fin du script")
 
 # Choisir le meilleur modèle (ex: best_cat)
 best_model = best_cat  # ou best_rf, best_lgb selon vos scores
-joblib.dump(best_model, "appendicite_pediatric/models/model_appendicite.pkl")
+joblib.dump(best_model, "app/models/model_appendicite.pkl")
 print("Modèle sauvegardé")
