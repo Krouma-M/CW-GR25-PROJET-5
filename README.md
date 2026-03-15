@@ -1,42 +1,22 @@
-# CW-GR25-PROJET-5
-Développer une application d'aide à la décision clinique visant à aider les pédiatres à diagnostiquer avec précision l'appendicite chez l'enfant, en utilisant les symptômes et les résultats des tests cliniques. Compte tenu du contexte médical critique, le modèle doit fournir des prédictions transparentes, fiables et explicables.
-# Pediatric Appendicitis Diagnosis
+# 🏥 Diagnostic d'Appendicite Pédiatrique — ML Pipeline
 
 ![CI](https://github.com/Krouma-M/CW-GR25-PROJET-5/actions/workflows/ci.yml/badge.svg?branch=develop)
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-Projet de classification pour le diagnostic de l'appendicite chez l'enfant avec ML explicable (SHAP).
-
-## Structure
-- `data/` : données brutes et traitées (non versionnées)
-- `notebooks/` : analyses exploratoires
-- `src/` : code source du pipeline ML
-- `app/` : application web (Streamlit/Flask)
-- `tests/` : tests unitaires
-- `.github/workflows/` : CI/CD
 
 
-## 📋 Description du projet
+## 📋 Description
 
 Ce projet développe un modèle de Machine Learning entraîné sur le dataset **Regensburg Pediatric Appendicitis** (UCI) pour prédire la probabilité d'appendicite chez un enfant à partir de ses symptômes et résultats cliniques.
 
-Compte tenu du contexte médical critique, chaque prédiction est accompagnée d'une **explication SHAP** qui indique quels facteurs médicaux ont influencé la décision du modèle, garantissant ainsi des prédictions transparentes, fiables et interprétables.
+Compte tenu du contexte médical critique, chaque prédiction est accompagnée d'une **explication SHAP** indiquant quels facteurs ont influencé la décision du modèle, garantissant des prédictions transparentes, fiables et interprétables.
 
----
-
-## 🎯 Objectifs
-
+**Objectifs :**
 - Comprendre les données grâce à une analyse exploratoire approfondie (EDA)
 - Développer un modèle ML robuste et explicable
 - Assurer la transparence des prédictions via SHAP
 - Créer une interface intuitive avec Streamlit
 - Suivre les bonnes pratiques de développement logiciel (GitHub, CI/CD)
-
-# 🏥 Diagnostic d'Appendicite Pédiatrique — ML Pipeline
-
-Projet 5 — Semaine de codage Mars 2026, Centrale Casablanca  
-Dataset : Regensburg Pediatric Appendicitis (UCI id=938)  
-782 patients | 53 features | Cible : Diagnosis (appendicitis / no appendicitis)
 
 ---
 
@@ -51,7 +31,7 @@ CW-GR25-PROJET-5/
 │   ├── data_processing.py       # Prétraitement et optimisation mémoire
 │   ├── train_model.py           # Entraînement des modèles ML
 │   ├── evaluate.py              # Évaluation et métriques
-│   └── shap.py                  # Explicabilité SHAP
+│   └── shap1.py                 # Explicabilité SHAP
 ├── app/
 │   └── app.py                   # Interface Streamlit
 ├── tests/
@@ -70,85 +50,51 @@ CW-GR25-PROJET-5/
 
 ### Prérequis
 
-Avant de commencer, installez les outils suivants :
-
 #### 🐍 Python 3.10+
 
 **Windows :**
 ```powershell
 winget install Python.Python.3.10
 ```
-
 **Mac :**
 ```bash
 brew install python@3.10
 ```
-
 **Linux (Ubuntu/Debian) :**
 ```bash
-sudo apt update
-sudo apt install python3.10 python3.10-venv python3-pip
+sudo apt update && sudo apt install python3.10 python3.10-venv python3-pip
 ```
-
-Vérifier l'installation :
-```bash
-python --version
-```
+Vérifier : `python --version`
 
 ---
 
 #### 🔧 Git
 
-**Windows :**
-```powershell
-winget install Git.Git
-```
+**Windows :** `winget install Git.Git`  
+**Mac :** `brew install git`  
+**Linux :** `sudo apt install git`  
 
-**Mac :**
-```bash
-brew install git
-```
-
-**Linux (Ubuntu/Debian) :**
-```bash
-sudo apt install git
-```
-
-Vérifier l'installation :
-```bash
-git --version
-```
+Vérifier : `git --version`
 
 ---
 
 #### 💻 VS Code *(recommandé)*
 
-**Windows :**
-```powershell
-winget install Microsoft.VisualStudioCode
-```
-
-**Mac :**
-```bash
-brew install --cask visual-studio-code
-```
-
-**Linux (Ubuntu/Debian) :**
-```bash
-sudo snap install code --classic
-```
+**Windows :** `winget install Microsoft.VisualStudioCode`  
+**Mac :** `brew install --cask visual-studio-code`  
+**Linux :** `sudo snap install code --classic`
 
 ---
 
-### 1. Cloner le repository
+### Mise en place
 
+**1. Cloner le repository**
 ```bash
 git clone https://github.com/CW-GR25-PROJET-5.git
 cd CW-GR25-PROJET-5
 ```
 
-### 2. Créer un environnement virtuel
-
+**2. Créer et activer un environnement virtuel**
 ```bash
 python -m venv venv
 
@@ -159,11 +105,8 @@ source venv/bin/activate
 venv\Scripts\activate
 ```
 
-### 3. Installer les dépendances
-
+**3. Installer les dépendances**
 ```bash
-python -m venv .env
-.env\Scripts\activate      # Windows
 pip install -r requirements.txt
 ```
 
@@ -171,25 +114,28 @@ pip install -r requirements.txt
 
 ## 🚀 Utilisation
 
-### Entraîner le modèle
-
+**Entraîner le modèle :**
 ```bash
 python src/train_model.py
 ```
 
-### Lancer l'application
-
+**Lancer l'application :**
 ```bash
 streamlit run app/app.py
 ```
-
 L'application s'ouvre automatiquement sur `http://localhost:8501`
 
-### Lancer les tests automatisés
+**Lancer les tests :**
+```bash
+python -m pytest tests/test_data_processing.py -v
+python -m pytest tests/test_model.py -v
+```
+
+---
 
 ## 🔄 Pipeline ML
 
-### 1. data_processing.py
+### 1. `data_processing.py` — Prétraitement
 
 Prépare les données brutes pour l'entraînement.
 
@@ -200,31 +146,17 @@ Prépare les données brutes pour l'entraînement.
 - `get_feature_names(X)` — retourne les noms des colonnes
 - `get_data_summary(df)` — retourne les statistiques du dataset
 
-**Détails du prétraitement :**
+**Détails :**
 - Suppression des lignes sans diagnostic
 - Encodage des variables catégorielles (LabelEncoder)
 - Imputation des valeurs manquantes (médiane)
 - Optimisation mémoire : 0.33 MB → 0.16 MB (gain 52%)
 - Split train/test : 80/20 avec stratify
+
 ```bash
 python src/data_processing.py
 ```
 
----
-
-## 🤖 Modèles utilisés
-
-Trois modèles ont été entraînés, évalués et comparés sur les métriques suivantes :
-
-| Modèle | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
-|--------|----------|-----------|--------|----------|---------|
-| Random Forest | 0.974 | 0.984 | 0.994 | — | — |
-| LightGBM | 0.981 | 0.984 | 0.980 | — | — |
-| **CatBoost** ✅ | **0.987** | **0.984** | **0.991** | — | — |
-
-### ✍️ Justification du choix — CatBoost
-
-Dans le cadre d'un système d'aide au diagnostic médical pédiatrique, le choix du modèle final repose sur une analyse rigoureuse des métriques de performance, en accordant une attention particulière au **recall** et à l'**accuracy globale**.
 **Résultat :**
 ```
 Training set : 624 patients
@@ -233,21 +165,70 @@ Features     : 55 colonnes
 Missing      : 0 valeurs manquantes
 ```
 
-Le modèle **CatBoost** a été retenu pour les raisons suivantes :
+---
 
-**1. Accuracy la plus élevée (0.987)** — CatBoost classe correctement 98.7% des cas, toutes catégories confondues, témoignant d'une excellente capacité de généralisation.
+### 2. `train_model.py` — Entraînement
 
-**2. Recall cliniquement sûr (0.991)** — Dans un contexte médical, le recall est la métrique la plus critique : il mesure la capacité du modèle à ne manquer aucun vrai cas d'appendicite. Manquer un tel diagnostic peut exposer l'enfant à des complications graves comme une perforation ou une péritonite. CatBoost affiche le deuxième recall le plus élevé, à seulement 0.003 point derrière Random Forest, tout en offrant une bien meilleure accuracy globale.
+Entraîne 3 modèles avec optimisation **GridSearchCV** (cv=5, scoring="f1", n_jobs=-1).
 
-**3. Precision identique (0.984)** — Les trois modèles étant à égalité sur ce critère, c'est la combinaison accuracy + recall qui fait pencher la balance en faveur de CatBoost.
+**Modèles :** Random Forest, LightGBM, CatBoost
 
-**4. Avantages techniques** — CatBoost est naturellement résistant à l'overfitting, gère efficacement les variables mixtes (numériques et catégorielles) sans encodage manuel, et nécessite peu de réglages d'hyperparamètres.
+**Meilleurs hyperparamètres trouvés :**
 
-> **Conclusion :** CatBoost représente le meilleur compromis entre précision globale, sensibilité clinique et robustesse technique, ce qui en fait le choix le plus adapté pour un outil d'aide au diagnostic pédiatrique où la fiabilité est non négociable.
+| Modèle | Paramètres |
+|--------|-----------|
+| Random Forest | n_estimators=300, max_depth=None, min_samples_split=5 |
+| LightGBM | n_estimators=200, max_depth=5, learning_rate=0.1 |
+| CatBoost | iterations=100, depth=6, learning_rate=0.2 |
+
+```bash
+python src/train_model.py
+```
+**Résultat :** 3 fichiers `.pkl` sauvegardés dans `models/`
 
 ---
 
-## 📊 Explication des métriques
+### 3. `evaluate.py` — Évaluation
+
+Évalue les modèles et sélectionne le meilleur automatiquement.
+
+```bash
+python src/evaluate.py
+```
+
+**Résultats :**
+
+| Modèle | Accuracy | Precision | Recall | F1 | ROC-AUC |
+|--------|----------|-----------|--------|----|---------|
+| Random Forest | 93.59% | 92.06% | 92.06% | 92.06% | **98.66%** |
+| LightGBM | **96.15%** | **95.24%** | **95.24%** | **95.24%** | 96.96% |
+| **CatBoost** ✅ | 92.95% | 88.24% | 95.24% | 91.60% | 97.92% |
+
+**Meilleur modèle : CatBoost** — sélectionné par départage sur le Recall puis le ROC-AUC  
+Sauvegardé automatiquement dans `models/best_model.pkl`
+
+**Logique de sélection :**
+- Meilleur Recall global : **0.9524** — ex-aequo entre LightGBM et CatBoost
+- Départage par ROC-AUC : CatBoost (**0.9792**) > LightGBM (0.9696)
+- ✅ **CatBoost sélectionné**
+
+---
+
+## 🤖 Choix du modèle — Justification CatBoost
+
+> ⚠️ Le **Recall** est la métrique prioritaire en médecine : rater une appendicite expose l'enfant à des complications graves (perforation, péritonite).
+
+**1. Recall maximal (95.24%)** — CatBoost et LightGBM sont ex-aequo sur le Recall, la métrique la plus critique cliniquement. Les deux modèles détectent 95.24% de tous les vrais cas d'appendicite.
+
+**2. Départage par ROC-AUC** — En cas d'égalité sur le Recall, on utilise la ROC-AUC comme critère secondaire. CatBoost obtient **97.92%** contre 96.96% pour LightGBM, ce qui traduit une meilleure capacité de discrimination globale entre les deux classes.
+
+**3. Avantages techniques** — CatBoost est naturellement résistant à l'overfitting, gère efficacement les variables mixtes sans encodage manuel, et nécessite peu de réglages d'hyperparamètres.
+
+> **Conclusion :** Bien que LightGBM domine sur accuracy, precision et F1, CatBoost est retenu car il égale le meilleur Recall tout en offrant une meilleure discrimination globale (ROC-AUC). Dans un contexte médical où manquer un diagnostic est inacceptable, ce critère prime sur les autres.
+
+---
+
+## 📊 Métriques — Rappel
 
 | Métrique | Définition | Importance |
 |----------|-----------|-----------|
@@ -259,24 +240,66 @@ Le modèle **CatBoost** a été retenu pour les raisons suivantes :
 
 ---
 
+## 🧠 Explicabilité SHAP
+
+```bash
+python src/shap1.py
+```
+
+**Top 10 features les plus importantes :**
+
+| Rang | Feature | Score SHAP |
+|------|---------|-----------|
+| 1 | Appendix_on_US | 1.9749 |
+| 2 | Appendix_Diameter | 1.2907 |
+| 3 | Ipsilateral_Rebound_Tenderness | 0.5618 |
+| 4 | WBC_Count | 0.3521 |
+| 5 | CRP | 0.3305 |
+| 6 | Peritonitis | 0.3014 |
+| 7 | Alvarado_Score | 0.2840 |
+| 8 | Neutrophilia | 0.2793 |
+| 9 | Surrounding_Tissue_Reaction | 0.1885 |
+| 10 | Free_Fluids | 0.1795 |
+
+Graphiques sauvegardés dans `figures/shap/`
+
+---
+
+## 🧪 Tests
+
+### `test_data_processing.py` — 6 tests
+
+| Test | Description |
+|------|-------------|
+| test_load_data | Vérifie le chargement des données |
+| test_no_missing_values | Vérifie 0 valeurs manquantes après imputation |
+| test_split_ratio | Vérifie le split 80/20 |
+| test_data_summary | Vérifie get_data_summary() |
+| test_optimize_memory | Vérifie la réduction mémoire |
+| test_load_best_model | Vérifie le chargement de best_model.pkl |
+
+### `test_model.py` — 5 tests
+
+| Test | Description |
+|------|-------------|
+| test_random_forest_gridsearch | RF avec GridSearch, Recall ≥ 80% |
+| test_lightgbm_gridsearch | LightGBM avec GridSearch, Recall ≥ 80% |
+| test_catboost_gridsearch | CatBoost avec GridSearch, F1 ≥ 80% |
+| test_data_loaded | Vérifie les données chargées |
+| test_best_model_exists | Vérifie best_model.pkl |
+
+---
+
 ## ❓ Questions critiques
 
-**Le dataset était-il équilibré ?**
+**Le dataset était-il équilibré ?**  
+Oui, le dataset est approximativement équilibré (~50% appendicite, ~50% pas d'appendicite). Aucune technique de rééquilibrage (SMOTE, undersampling) n'a été nécessaire.
 
-Oui, le dataset est approximativement équilibré (~50% appendicite, ~50% pas d'appendicite). Aucune technique de rééquilibrage (SMOTE, undersampling) n'a donc été nécessaire.
+**Quel modèle a le mieux performé ?**  
+LightGBM domine sur accuracy (96.15%), precision, F1 et ROC-AUC. Cependant, LightGBM et CatBoost sont ex-aequo sur le Recall (95.24%), métrique prioritaire en médecine. CatBoost est finalement sélectionné car il remporte le départage par ROC-AUC (97.92% vs 96.96%).
 
-**Quel modèle a le mieux performé ?**
-
-CatBoost, avec une accuracy de 0.987 et un recall de 0.991, offre les meilleures performances globales.
-
-**Quelles features ont le plus influencé les prédictions (SHAP) ?**
-
-D'après l'analyse SHAP, les features les plus importantes sont :
-1. Alvarado Score
-2. Paediatric Appendicitis Score
-3. CRP (Protéine C-Réactive)
-4. Appendix Diameter
-5. Neutrophil Percentage
+**Quelles features ont le plus influencé les prédictions (SHAP) ?**  
+D'après l'analyse SHAP, les features les plus importantes sont : Appendix_on_US, Appendix_Diameter, Ipsilateral_Rebound_Tenderness, WBC_Count et CRP.
 
 ---
 
@@ -287,9 +310,7 @@ D'après l'analyse SHAP, les features les plus importantes sont :
 **Prompt utilisé :**
 > *"Écris une fonction Python appelée optimize_memory(df) qui prend un DataFrame pandas en entrée et réduit sa consommation mémoire en convertissant les colonnes float64 en float32 et int64 en int32. Affiche la mémoire avant et après optimisation en MB ainsi que le pourcentage de réduction."*
 
-**Résultat :** La fonction générée était fonctionnelle et a permis une réduction significative de la mémoire utilisée.
-
-**Efficacité du prompt :** Très efficace car le prompt était précis sur le nom de la fonction, les types à convertir, et le format d'affichage attendu. Un prompt plus vague comme *"optimise la mémoire"* aurait donné un résultat moins ciblé.
+**Efficacité :** Très efficace car le prompt était précis sur le nom de la fonction, les types à convertir et le format d'affichage attendu. Un prompt plus vague comme *"optimise la mémoire"* aurait donné un résultat moins ciblé.
 
 ---
 
@@ -308,110 +329,3 @@ D'après l'analyse SHAP, les features les plus importantes sont :
 ## 📊 Dataset
 
 [Regensburg Pediatric Appendicitis — UCI ML Repository](https://archive.ics.uci.edu/dataset/938/regensburg+pediatric+appendicitis)
-
----
-
-*Coding Week — 09 au 15 Mars 2026 | École Centrale Casablanca*
-### 2. train_model.py
-
-Entraîne 3 modèles avec optimisation GridSearchCV.
-
-**Modèles :**
-- Random Forest
-- LightGBM  
-- CatBoost
-
-**GridSearchCV :** cv=5, scoring="f1", n_jobs=-1
-
-**Meilleurs paramètres trouvés :**
-
-| Modèle | Paramètres |
-|--------|-----------|
-| Random Forest | n_estimators=300, max_depth=None, min_samples_split=5 |
-| LightGBM | n_estimators=200, max_depth=5, learning_rate=0.1 |
-| CatBoost | iterations=100, depth=6, learning_rate=0.2 |
-```bash
-python src/train_model.py
-```
-
-**Résultat :** 3 fichiers `.pkl` sauvegardés dans `models/`
-
----
-
-### 3. evaluate.py
-
-Évalue les modèles et sélectionne le meilleur.
-
-**Métriques calculées :** Accuracy, Precision, Recall, F1, ROC-AUC
-```bash
-python src/evaluate.py
-```
-
-**Résultats :**
-
-| Modèle | Accuracy | Precision | Recall | F1 | ROC-AUC |
-|--------|----------|-----------|--------|----|---------|
-| Random Forest | 97.44% | 98.36% | 95.24% | 96.77% | **99.40%** |
-| LightGBM | 98.08% | 98.39% | 96.83% | 97.60% | 98.81% |
-| **CatBoost** | **98.72%** | **98.41%** | **98.41%** | **98.41%** | 99.08% |
-
-**Meilleur modèle : CatBoost** — gagne sur 4/5 métriques  
-Sauvegardé automatiquement dans `models/best_model.pkl`
-
-> ⚠️ Le **Recall** est la métrique prioritaire en médecine :  
-> rater une appendicite = danger de mort pour l'enfant.
-
----
-
-## 🧪 Tests
-
-### test_data_processing.py — 6 tests
-
-| Test | Description |
-|------|-------------|
-| test_load_data | Vérifie le chargement des données |
-| test_no_missing_values | Vérifie 0 valeurs manquantes après imputation |
-| test_split_ratio | Vérifie le split 80/20 |
-| test_data_summary | Vérifie get_data_summary() |
-| test_optimize_memory | Vérifie la réduction mémoire |
-| test_load_best_model | Vérifie le chargement de best_model.pkl |
-
-### test_model.py — 5 tests
-
-| Test | Description |
-|------|-------------|
-| test_random_forest_gridsearch | RF avec GridSearch, Recall ≥ 80% |
-| test_lightgbm_gridsearch | LightGBM avec GridSearch, Recall ≥ 80% |
-| test_catboost_gridsearch | CatBoost avec GridSearch, F1 ≥ 80% |
-| test_data_loaded | Vérifie les données chargées |
-| test_best_model_exists | Vérifie best_model.pkl |
-```bash
-python -m pytest tests/test_data_processing.py -v
-python -m pytest tests/test_model.py -v
-```
-
----
-
-##  Explicabilité SHAP
-```bash
-python src/shap1.py
-```
-
-**Top 10 features importantes :**
-
-| Rang | Feature | Score SHAP |
-|------|---------|-----------|
-| 1 | Appendix_on_US | 2.5888 |
-| 2 | Management | 2.1934 |
-| 3 | Appendix_Diameter | 1.5836 |
-| 4 | WBC_Count | 0.4042 |
-| 5 | Alvarado_Score | 0.3680 |
-
-Graphiques sauvegardés dans `figures/shap/`
-
----
-
-##  Équipe
-
-Projet réalisé dans le cadre de la semaine de codage  
-Centrale Casablanca — Mars 2026
