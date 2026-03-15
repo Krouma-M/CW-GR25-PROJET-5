@@ -165,5 +165,5 @@ if __name__ == "__main__":
 
     print(" Analyse SHAP terminée !")
     print("Fichiers générés :")
-    print("  - figures/shap/best_model_summary.png")
-    print("  - figures/shap/best_model_importance.png")
+    print("  - reports/figures/shap/best_model_summary.png")
+    print("  - reports/figures/shap/best_model_importance.png")
