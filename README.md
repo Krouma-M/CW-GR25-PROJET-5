@@ -4,12 +4,6 @@
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-Projet de classification pour le diagnostic de l'appendicite chez l'enfant avec ML explicable (SHAP).
-
-**Coding Week — 09 au 15 Mars 2026 | École Centrale Casablanca**  
-Dataset : Regensburg Pediatric Appendicitis (UCI id=938) — 782 patients | 53 features | Cible : `Diagnosis`
-
----
 
 ## 📋 Description
 

@@ -5,6 +5,9 @@ import plotly.graph_objects as go
 import os
 import joblib
 import base64
+import shap
+import matplotlib.pyplot as plt
+import io
 
 # -------------------------------------------------------------------
 # CONFIGURATION DE LA PAGE
@@ -21,9 +24,11 @@ st.set_page_config(
 # -------------------------------------------------------------------
 PIPELINE_PATH = "models/pipeline.pkl"
 COLUMNS_PATH = "models/columns.pkl"
+EXPLAINER_PATH = "models/explainer.pkl"
 
 pipeline = None
 EXPECTED_COLUMNS = []
+explainer = None
 
 @st.cache_resource
 def load_pipeline_and_columns():
@@ -32,7 +37,6 @@ def load_pipeline_and_columns():
     if os.path.exists(PIPELINE_PATH):
         try:
             pl = joblib.load(PIPELINE_PATH)
-            #st.success("✅ Pipeline chargé avec succès.")
         except Exception as e:
             st.error(f"❌ Erreur lors du chargement du pipeline : {e}")
     else:
@@ -42,14 +46,18 @@ def load_pipeline_and_columns():
         cols = joblib.load(COLUMNS_PATH)
     else:
         st.error("Fichier columns.pkl introuvable. Veuillez entraîner le modèle.")
-        cols = []  # Liste vide, l'application plantera si on tente de prédire
+        cols = []
     return pl, cols
 
 pipeline, EXPECTED_COLUMNS = load_pipeline_and_columns()
 
+if os.path.exists(EXPLAINER_PATH):
+    explainer = joblib.load(EXPLAINER_PATH)
+else:
+    st.warning("⚠️ Explainer SHAP non trouvé. Les graphiques locaux ne seront pas disponibles.")
+
 # -------------------------------------------------------------------
 # LISTE DES COLONNES NUMÉRIQUES (pour initialisation)
-# (À adapter si nécessaire, mais peut être déduite de EXPECTED_COLUMNS)
 # -------------------------------------------------------------------
 numeric_features = [
     'Age', 'BMI', 'Height', 'Weight', 'Length_of_Stay', 'Alvarado_Score',
@@ -57,8 +65,6 @@ numeric_features = [
     'WBC_Count', 'Neutrophil_Percentage', 'Segmented_Neutrophils', 'RBC_Count',
     'Hemoglobin', 'RDW', 'Thrombocyte_Count', 'CRP'
 ]
-# Les colonnes catégorielles sont celles qui ne sont pas dans numeric_features
-# (mais attention, cette liste doit correspondre exactement aux noms)
 
 # -------------------------------------------------------------------
 # INITIALISATION DE L'ÉTAT DE SESSION
@@ -69,11 +75,13 @@ if "shap_index" not in st.session_state:
     st.session_state.shap_index = 0
 if "probabilite" not in st.session_state:
     st.session_state.probabilite = None
+if "local_shap_plot" not in st.session_state:
+    st.session_state.local_shap_plot = None
 
 # -------------------------------------------------------------------
 # DONNÉES SHAP (images pré-générées)
 # -------------------------------------------------------------------
-SHAP_DIR = "figures/shap"
+SHAP_DIR = "reports/figures/shap"
 shap_images = [
     {"label": "CatBoost — Résumé (Beeswarm)",    "path": f"{SHAP_DIR}/catboost_summary.png"},
     {"label": "CatBoost — Importance globale",   "path": f"{SHAP_DIR}/catboost_importance.png"},
@@ -86,52 +94,40 @@ N_SHAP = len(shap_images)
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-
 *, *::before, *::after { box-sizing: border-box; }
-
 html, body, [data-testid="stAppViewContainer"] {
     background: #050d1a !important;
     color: #e8edf5 !important;
     font-family: 'DM Sans', sans-serif !important;
 }
-
 [data-testid="stAppViewContainer"] {
     background:
         radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,168,255,0.07) 0%, transparent 60%),
         radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,255,180,0.05) 0%, transparent 60%),
         #050d1a !important;
 }
-
 [data-testid="stHeader"], [data-testid="stToolbar"] {
     background: transparent !important;
     border: none !important;
 }
-
 #MainMenu { visibility: visible; }
 footer, header { visibility: visible; }
-
 .block-container {
     max-width: 1200px !important;
     padding: 2rem 2.5rem 4rem !important;
 }
-
-/* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: rgba(10, 20, 35, 0.97) !important;
     border-right: 1px solid rgba(0,168,255,0.2);
     backdrop-filter: blur(10px);
 }
-
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3 {
     font-family: 'Syne', sans-serif !important;
     color: #ffffff !important;
 }
-
 [data-testid="stSidebar"] .stMarkdown { color: #e8edf5 !important; }
-
-/* ── Hero ── */
 .hero {
     display: flex;
     align-items: center;
@@ -144,7 +140,6 @@ footer, header { visibility: visible; }
     position: relative;
     overflow: hidden;
 }
-
 .hero::before {
     content: '';
     position: absolute;
@@ -153,9 +148,7 @@ footer, header { visibility: visible; }
     background: radial-gradient(circle, rgba(0,168,255,0.12), transparent 70%);
     border-radius: 50%;
 }
-
 .hero-icon { font-size: 3.5rem; line-height: 1; filter: drop-shadow(0 0 20px rgba(0,168,255,0.5)); }
-
 .hero-title {
     font-family: 'Syne', sans-serif !important;
     font-size: 2.2rem !important;
@@ -164,14 +157,12 @@ footer, header { visibility: visible; }
     letter-spacing: -0.5px;
     line-height: 1.1;
 }
-
 .hero-sub {
     font-size: 0.95rem;
     color: rgba(232,237,245,0.6);
     margin-top: 0.4rem;
     font-weight: 300;
 }
-
 .hero-badge {
     margin-left: auto;
     background: rgba(0,255,180,0.08);
@@ -185,8 +176,6 @@ footer, header { visibility: visible; }
     text-transform: uppercase;
     white-space: nowrap;
 }
-
-/* ── Sections ── */
 .section-label {
     font-family: 'Syne', sans-serif;
     font-size: 0.7rem;
@@ -196,7 +185,6 @@ footer, header { visibility: visible; }
     color: #00a8ff;
     margin-bottom: 0.4rem;
 }
-
 .section-title {
     font-family: 'Syne', sans-serif;
     font-size: 1.35rem;
@@ -204,7 +192,6 @@ footer, header { visibility: visible; }
     color: #ffffff;
     margin-bottom: 1.5rem;
 }
-
 .card {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.07);
@@ -213,7 +200,6 @@ footer, header { visibility: visible; }
     backdrop-filter: blur(10px);
     height: 100%;
 }
-
 .card-title {
     font-family: 'Syne', sans-serif;
     font-size: 0.85rem;
@@ -225,8 +211,6 @@ footer, header { visibility: visible; }
     padding-bottom: 0.8rem;
     border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-
-/* ── Banner démo ── */
 .demo-banner {
     display: flex;
     align-items: center;
@@ -239,22 +223,18 @@ footer, header { visibility: visible; }
     font-size: 0.85rem;
     color: rgba(255,220,100,0.9);
 }
-
-/* ── Inputs ── */
 div[data-baseweb="select"] > div {
     background: rgba(255,255,255,0.04) !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
     border-radius: 10px !important;
     color: #e8edf5 !important;
 }
-
 [data-testid="stNumberInput"] input {
     background: rgba(255,255,255,0.04) !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
     border-radius: 10px !important;
     color: #e8edf5 !important;
 }
-
 label[data-testid="stWidgetLabel"] p {
     font-size: 0.8rem !important;
     font-weight: 500 !important;
@@ -263,8 +243,6 @@ label[data-testid="stWidgetLabel"] p {
     text-transform: uppercase;
     font-family: 'DM Sans', sans-serif !important;
 }
-
-/* ── Boutons ── */
 [data-testid="stButton"] > button {
     width: 100%;
     background: linear-gradient(135deg, #00a8ff 0%, #0055cc 100%) !important;
@@ -279,27 +257,22 @@ label[data-testid="stWidgetLabel"] p {
     box-shadow: 0 4px 24px rgba(0,168,255,0.3) !important;
     transition: all 0.2s ease !important;
 }
-
 [data-testid="stButton"] > button:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 8px 32px rgba(0,168,255,0.45) !important;
 }
-
-/* ── Résultats ── */
 .result-high {
     background: linear-gradient(135deg, rgba(255,60,60,0.1), rgba(200,40,40,0.05));
     border: 1px solid rgba(255,60,60,0.3);
     border-radius: 16px;
     padding: 1.5rem 2rem;
 }
-
 .result-low {
     background: linear-gradient(135deg, rgba(0,255,140,0.08), rgba(0,180,90,0.04));
     border: 1px solid rgba(0,255,140,0.25);
     border-radius: 16px;
     padding: 1.5rem 2rem;
 }
-
 .result-title {
     font-family: 'Syne', sans-serif;
     font-size: 1.2rem;
@@ -307,11 +280,8 @@ label[data-testid="stWidgetLabel"] p {
     color: #ffffff;
     margin-bottom: 0.3rem;
 }
-
 .result-sub { font-size: 0.85rem; color: rgba(232,237,245,0.55); }
-
 .stat-row { display: flex; gap: 1rem; margin: 1.5rem 0; }
-
 .stat-box {
     flex: 1;
     background: rgba(255,255,255,0.03);
@@ -320,14 +290,12 @@ label[data-testid="stWidgetLabel"] p {
     padding: 1rem;
     text-align: center;
 }
-
 .stat-value {
     font-family: 'Syne', sans-serif;
     font-size: 1.5rem;
     font-weight: 800;
     color: #00a8ff;
 }
-
 .stat-label {
     font-size: 0.7rem;
     color: rgba(232,237,245,0.45);
@@ -335,42 +303,11 @@ label[data-testid="stWidgetLabel"] p {
     letter-spacing: 1px;
     margin-top: 0.25rem;
 }
-
-/* ── Navigation SHAP ── */
-.img-nav-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 0.6rem 1rem;
-    margin-bottom: 1rem;
-    gap: 0.5rem;
-}
-
-.img-counter {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.78rem;
-    color: rgba(232,237,245,0.4);
-    letter-spacing: 1px;
-}
-
-.img-title-nav {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: #ffffff;
-    text-align: center;
-    flex: 1;
-}
-
 .divider {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
     margin: 2.5rem 0;
 }
-
 .shap-note {
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(255,255,255,0.07);
@@ -380,7 +317,6 @@ label[data-testid="stWidgetLabel"] p {
     color: rgba(232,237,245,0.5);
     line-height: 1.8;
 }
-
 .footer {
     text-align: center;
     font-size: 0.72rem;
@@ -398,15 +334,15 @@ with st.sidebar:
     st.markdown("## 🩺 Paramètres patient")
     st.markdown("---")
 
-    # --- Paramètres de base (déjà existants) ---
+    # --- Paramètres de base ---
     age = st.slider("Âge (années)", 1, 14, 8)
-    sexe = st.selectbox("Sexe biologique", ["Garçon", "Fille"])
+    sexe = st.selectbox("Sexe Biologique", ["Garçon", "Fille"])
 
     st.markdown("### Symptômes cliniques")
     douleur = st.selectbox("Douleur fosse iliaque droite", ["Oui", "Non"])
     fievre = st.number_input("Température corporelle (°C)", 35.0, 42.0, 37.0, step=0.1,
                                help="Température normale : 36.5–37.5 °C")
-    vomissements = st.selectbox("Nausées / Vomissements", ["Oui", "Non"])
+    vomissements = st.selectbox("Vomissements", ["Oui", "Non"])
 
     st.markdown("### Résultats biologiques")
     wbc = st.number_input("Leucocytes WBC (G/L)", 0.0, 30.0, 8.5, step=0.1,
@@ -414,7 +350,7 @@ with st.sidebar:
     crp = st.number_input("CRP (mg/L)", 0.0, 300.0, 10.0, step=1.0,
                           help="Normale : < 5 mg/L")
 
-    # --- Nouveaux paramètres pour améliorer la précision ---
+    # --- Nouveaux paramètres ---
     st.markdown("### Données anthropométriques")
     bmi = st.number_input("IMC (kg/m²)", 10.0, 40.0, 20.0, step=0.1,
                           help="Indice de masse corporelle")
@@ -435,7 +371,7 @@ with st.sidebar:
     coughing_pain = st.selectbox("Douleur à la toux", ["Non", "Oui"])
     rebound_tenderness = st.selectbox("Douleur au relâchement (contralatéral)", ["Non", "Oui"])
     psoas_sign = st.selectbox("Signe du psoas", ["Non", "Oui"])
-    nausea = st.selectbox("Nausées (sans vomissements)", ["Non", "Oui"])  # attention : Nausea déjà utilisé ? On a 'Nausea' comme colonne
+    nausea = st.selectbox("Nausées (sans vomissements)", ["Non", "Oui"])
 
     st.markdown("### Examens biologiques supplémentaires")
     neutrophil_percentage = st.number_input("Pourcentage de neutrophiles", 0.0, 100.0, 60.0, step=0.1)
@@ -443,22 +379,15 @@ with st.sidebar:
     hemoglobin = st.number_input("Hémoglobine (g/dL)", 0.0, 20.0, 12.0, step=0.1)
     thrombocyte_count = st.number_input("Plaquettes (x10^9/L)", 0.0, 1000.0, 250.0, step=1.0)
 
-    st.markdown("### Résultats urinaires")
-    ketones_urine = st.selectbox("Cétonurie", ["Non", "Oui"])
-    rbc_urine = st.selectbox("Hématurie microscopique", ["Non", "Oui"])
-    wbc_urine = st.selectbox("Leucocyturie", ["Non", "Oui"])
-    dysuria = st.selectbox("Dysurie", ["Non", "Oui"])
 
     st.markdown("---")
 
     # Bouton de lancement
     if st.button("🔍 Lancer l'analyse diagnostique", use_container_width=True):
         st.session_state.analyse_lancee = True
-
         try:
             if pipeline is not None and EXPECTED_COLUMNS:
                 # Initialiser toutes les colonnes avec des valeurs par défaut
-                # Initialisation (toujours avec des valeurs par défaut)
                 input_dict = {}
                 for col in EXPECTED_COLUMNS:
                     if col in numeric_features:
@@ -467,51 +396,41 @@ with st.sidebar:
                         input_dict[col] = "Non"
 
                 # Mise à jour avec les valeurs du formulaire
-                    input_dict['Age'] = age
-                    input_dict['Sex'] = sexe
-                    input_dict['WBC_Count'] = wbc
-                    input_dict['CRP'] = crp
+                input_dict['Age'] = age
+                input_dict['Sex'] = sexe
+                input_dict['WBC_Count'] = wbc
+                input_dict['CRP'] = crp
 
-                    # Anciens symptômes
-                    input_dict['Lower_Right_Abd_Pain'] = douleur
-                    input_dict['Migratory_Pain'] = douleur   # ou migratory_pain si vous avez un champ séparé
-                    input_dict['Nausea'] = vomissements
+                # Anciens symptômes
+                input_dict['Lower_Right_Abd_Pain'] = douleur
+                input_dict['Migratory_Pain'] = douleur
+                input_dict['Nausea'] = vomissements
 
-                    # Nouveaux champs
-                    input_dict['BMI'] = bmi
-                    input_dict['Height'] = height
-                    input_dict['Weight'] = weight
-                    input_dict['Alvarado_Score'] = alvarado
-                    input_dict['Paedriatic_Appendicitis_Score'] = paediatric_score
-                    input_dict['Appendix_Diameter'] = appendix_diameter
-                    input_dict['Migratory_Pain'] = migratory_pain  # écrase la valeur précédente si vous voulez un champ distinct
-                    input_dict['Loss_of_Appetite'] = loss_of_appetite
-                    input_dict['Coughing_Pain'] = coughing_pain
-                    input_dict['Contralateral_Rebound_Tenderness'] = rebound_tenderness
-                    input_dict['Psoas_Sign'] = psoas_sign
-                    input_dict['Nausea'] = nausea  # si vous avez un champ séparé pour Nausea
-                    input_dict['Neutrophil_Percentage'] = neutrophil_percentage
-                    input_dict['RBC_Count'] = rbc_count
-                    input_dict['Hemoglobin'] = hemoglobin
-                    input_dict['Thrombocyte_Count'] = thrombocyte_count
-                    input_dict['Ketones_in_Urine'] = ketones_urine
-                    input_dict['RBC_in_Urine'] = rbc_urine
-                    input_dict['WBC_in_Urine'] = wbc_urine
-                    input_dict['Dysuria'] = dysuria
+                # Nouveaux champs
+                input_dict['BMI'] = bmi
+                input_dict['Height'] = height
+                input_dict['Weight'] = weight
+                input_dict['Alvarado_Score'] = alvarado
+                input_dict['Paedriatic_Appendicitis_Score'] = paediatric_score
+                input_dict['Appendix_Diameter'] = appendix_diameter
+                input_dict['Migratory_Pain'] = migratory_pain
+                input_dict['Loss_of_Appetite'] = loss_of_appetite
+                input_dict['Coughing_Pain'] = coughing_pain
+                input_dict['Contralateral_Rebound_Tenderness'] = rebound_tenderness
+                input_dict['Psoas_Sign'] = psoas_sign
+                input_dict['Nausea'] = nausea
+                input_dict['Neutrophil_Percentage'] = neutrophil_percentage
+                input_dict['RBC_Count'] = rbc_count
+                input_dict['Hemoglobin'] = hemoglobin
+                input_dict['Thrombocyte_Count'] = thrombocyte_count
 
-                    # Gestion de la fièvre (Body_Temperature)
-                    input_dict['Body_Temperature'] = 38.5 if fievre == "Oui" else 37.0
+                # Température
+                input_dict['Body_Temperature'] = fievre
 
-                # ... (ajoutez d'autres correspondances si nécessaire)
-
-                # Gestion de la fièvre : selon les colonnes disponibles
                 if 'Elevated_Temperature' in EXPECTED_COLUMNS:
-                    input_dict['Elevated_Temperature'] = fievre
-                if 'Body_Temperature' in EXPECTED_COLUMNS:
-                    # Si la colonne est numérique, on met une valeur
-                    input_dict['Body_Temperature'] = 38.5 if fievre == "Oui" else 37.0
+                    input_dict['Elevated_Temperature'] = "Oui" if fievre >= 38.0 else "Non"
 
-                # Vérifier qu'aucune colonne n'est manquante
+                # Vérifier les colonnes manquantes
                 missing = set(EXPECTED_COLUMNS) - set(input_dict.keys())
                 if missing:
                     st.error(f"Colonnes manquantes dans input_dict : {missing}")
@@ -520,19 +439,66 @@ with st.sidebar:
                 # Créer le DataFrame dans l'ordre exact
                 input_df = pd.DataFrame([input_dict])[EXPECTED_COLUMNS]
 
-                # Prédiction
-                proba = pipeline.predict_proba(input_df)[0][1]
+                # PRÉDICTION
+                proba_array = pipeline.predict_proba(input_df)
+                if proba_array.shape[1] >= 2:
+                    proba = proba_array[0][1]
+                else:
+                    proba = proba_array[0][0]
+                    st.warning("Le modèle n'a retourné qu'une seule probabilité. Elle est utilisée comme proba de la classe positive.")
 
+                # --- Génération du graphique SHAP local ---
+                st.session_state.local_shap_plot = None  # valeur par défaut
+                if explainer is not None:
+                    # Appliquer le préprocesseur pour obtenir les features transformées
+                    if hasattr(pipeline, 'named_steps') and 'preprocessor' in pipeline.named_steps:
+                        X_processed = pipeline.named_steps['preprocessor'].transform(input_df)
+                        # Récupérer les noms des features après preprocessing
+                        feature_names = pipeline.named_steps['preprocessor'].get_feature_names_out()
+                    else:
+                        X_processed = input_df.values
+                        feature_names = input_df.columns.tolist()
+
+                    # Calcul des valeurs SHAP
+                    shap_values = explainer.shap_values(X_processed)
+
+                    if hasattr(shap_values, 'shape') and shap_values.shape[0] == 1:
+                        # Appliquer le style sombre
+                        plt.style.use('dark_background')
+                        plt.rcParams['figure.facecolor'] = '#050d1a'
+                        plt.rcParams['axes.facecolor'] = '#050d1a'
+                        plt.rcParams['axes.edgecolor'] = '#00a8ff'
+                        plt.rcParams['axes.labelcolor'] = 'white'
+                        plt.rcParams['xtick.color'] = 'white'
+                        plt.rcParams['ytick.color'] = 'white'
+                        plt.rcParams['text.color'] = 'white'
+
+                        plt.figure()
+                        shap.waterfall_plot(shap.Explanation(values=shap_values[0],
+                                                            base_values=explainer.expected_value,
+                                                            data=X_processed[0],
+                                                            feature_names=feature_names),
+                                            show=False)
+                        plt.tight_layout()
+                        buf = io.BytesIO()
+                        plt.savefig(buf, format='png', dpi=100, facecolor=plt.gcf().get_facecolor())
+                        buf.seek(0)
+                        img_str = base64.b64encode(buf.read()).decode()
+                        plt.close()
+                        st.session_state.local_shap_plot = img_str
+                    else:
+                        st.warning("La forme de shap_values n'est pas celle attendue.")
             else:
                 # Mode démonstration (simulation)
                 douleur_val = 1 if douleur == "Oui" else 0
-                fievre_val = 1 if fievre == "Oui" else 0
+                fievre_val = 1 if fievre >= 38.0 else 0
                 vomissements_val = 1 if vomissements == "Oui" else 0
                 score = (douleur_val * 0.35 + fievre_val * 0.20 + vomissements_val * 0.15
-                         + min(wbc / 20.0, 1) * 0.18 + min(crp / 150.0, 1) * 0.12)
+                        + min(wbc / 20.0, 1) * 0.18 + min(crp / 150.0, 1) * 0.12)
                 proba = float(np.clip(score + np.random.uniform(-0.03, 0.05), 0.02, 0.97))
+                st.session_state.local_shap_plot = None
 
-            # Sauvegarder dans la session
+            # Sauvegarder dans la session (commune aux deux branches)
             st.session_state.probabilite = proba
             st.session_state.age = age
             st.session_state.sexe = sexe
@@ -544,6 +510,8 @@ with st.sidebar:
 
         except Exception as e:
             st.error(f"Erreur lors de la prédiction : {e}")
+            import traceback
+            st.error(traceback.format_exc())
             st.session_state.analyse_lancee = False
 
 # -------------------------------------------------------------------
@@ -556,7 +524,7 @@ st.markdown("""
         <div class="hero-title">Appendix</div>
         <div class="hero-sub">Système d'aide au diagnostic · Appendicite pédiatrique · Modèle CatBoost</div>
     </div>
-    <div class="hero-badge">v1.0 · Démo</div>
+    <div class="hero-badge">v1.0.0</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -635,12 +603,21 @@ if st.session_state.analyse_lancee and st.session_state.probabilite is not None:
         fig_gauge.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=270, margin=dict(t=40, b=10, l=30, r=30))
         st.plotly_chart(fig_gauge, use_container_width=True)
 
+
     # -------------------------------------------------------------------
-    # SECTION SHAP
+    # SECTION SHAP LOCAL
+    # -------------------------------------------------------------------
+    if st.session_state.local_shap_plot:
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Explication locale</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Impact des variables pour cette prédiction</div>', unsafe_allow_html=True)
+        st.image(f"data:image/png;base64,{st.session_state.local_shap_plot}", use_container_width=True)
+    # -------------------------------------------------------------------
+    # SECTION SHAP GLOBAL
     # -------------------------------------------------------------------
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-label">Interprétabilité</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Explication de la décision — Analyse SHAP</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Interprétabilité globale</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Importance des variables (ensemble du dataset)</div>', unsafe_allow_html=True)
 
     shap_col, note_col = st.columns([2.2, 1], gap="large")
 
@@ -673,7 +650,6 @@ if st.session_state.analyse_lancee and st.session_state.probabilite is not None:
             <strong>Importance globale</strong><br>Longueur de barre = importance moyenne de chaque variable sur l'ensemble des patients.
         </div>
         """, unsafe_allow_html=True)
-
     # -------------------------------------------------------------------
     # TÉLÉCHARGEMENT DU RAPPORT
     # -------------------------------------------------------------------
@@ -690,6 +666,11 @@ if st.session_state.analyse_lancee and st.session_state.probabilite is not None:
     else:
         shap_img_tag = '<p style="color:#888;font-style:italic">Image SHAP non disponible.</p>'
 
+    if st.session_state.local_shap_plot:
+        local_img_tag = f'<img src="data:image/png;base64,{st.session_state.local_shap_plot}" style="width:100%;border-radius:10px;margin-top:1rem"/>'
+    else:
+        local_img_tag = ""
+
     risk_color = "#ff6060" if prediction == 1 else "#00ff8c"
     risk_text = "Risque ÉLEVÉ d'appendicite" if prediction == 1 else "Risque FAIBLE d'appendicite"
     conseil = ("Consultation chirurgicale pédiatrique recommandée" if prediction == 1 else "Surveillance clinique et réévaluation conseillées")
@@ -697,22 +678,64 @@ if st.session_state.analyse_lancee and st.session_state.probabilite is not None:
     rapport_html = f"""<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"/><title>Rapport Appendix — {st.session_state.get('age','?')} ans</title>
-<style>... (gardez votre style) ...</style>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
+  body {{
+      margin:0; padding:40px; background:#050d1a; color:#e8edf5;
+      font-family:'DM Sans',sans-serif;
+  }}
+  h1 {{ font-family:'Syne',sans-serif; font-size:2rem; color:#fff; margin-bottom:0.2rem; }}
+  h2 {{ font-family:'Syne',sans-serif; font-size:1.1rem; color:#00a8ff;
+        letter-spacing:2px; text-transform:uppercase; margin:2rem 0 0.5rem; }}
+  .badge {{
+      display:inline-block; background:rgba(0,255,180,0.1);
+      border:1px solid rgba(0,255,180,0.3); color:#00ffb4;
+      padding:4px 14px; border-radius:100px; font-size:0.75rem;
+      letter-spacing:1px; text-transform:uppercase; margin-bottom:1.5rem;
+  }}
+  table {{ width:100%; border-collapse:collapse; margin-top:0.5rem; }}
+  td, th {{
+      padding:10px 14px; border:1px solid rgba(255,255,255,0.07);
+      font-size:0.88rem;
+  }}
+  th {{ background:rgba(0,168,255,0.08); color:#00a8ff;
+        font-family:'Syne',sans-serif; font-size:0.78rem;
+        text-transform:uppercase; letter-spacing:1px; }}
+  tr:nth-child(even) td {{ background:rgba(255,255,255,0.02); }}
+  .result-box {{
+      border:1px solid {risk_color}55; border-radius:14px;
+      padding:1.2rem 1.6rem; margin-top:1rem;
+      background:rgba(255,255,255,0.02);
+  }}
+  .prob {{ font-family:'Syne',sans-serif; font-size:2rem;
+           font-weight:800; color:{risk_color}; }}
+  .conseil {{ font-size:0.85rem; color:rgba(232,237,245,0.6); margin-top:0.3rem; }}
+  .disclaimer {{
+      margin-top:2rem; padding:1rem 1.5rem;
+      border-left:3px solid rgba(0,168,255,0.35);
+      font-size:0.78rem; color:rgba(232,237,245,0.38); line-height:1.7;
+  }}
+  .divider {{ height:1px; background:rgba(255,255,255,0.07); margin:2rem 0; }}
+  .footer {{ text-align:center; font-size:0.7rem;
+             color:rgba(232,237,245,0.2); margin-top:3rem; }}
+</style>
 </head>
 <body>
 <h1>🩺 Appendix</h1>
 <div class="badge">v1.0 · Rapport diagnostique</div>
+
 <h2>Paramètres patient</h2>
 <table>
   <tr><th>Paramètre</th><th>Valeur</th></tr>
   <tr><td>Âge</td><td>{st.session_state.get('age','—')} ans</td></tr>
   <tr><td>Sexe</td><td>{st.session_state.get('sexe','—')}</td></tr>
   <tr><td>Douleur fosse iliaque droite</td><td>{st.session_state.get('douleur','—')}</td></tr>
-  <tr><td>Fièvre > 38 °C</td><td>{st.session_state.get('fievre','—')}</td></tr>
+  <tr><td>Fièvre > 38 °C</td><td>{'Oui' if st.session_state.get('fievre',0)>=38 else 'Non'}</td></tr>
   <tr><td>Nausées / Vomissements</td><td>{st.session_state.get('vomissements','—')}</td></tr>
   <tr><td>Leucocytes WBC</td><td>{st.session_state.get('wbc','—')} G/L</td></tr>
   <tr><td>CRP</td><td>{st.session_state.get('crp','—')} mg/L</td></tr>
 </table>
+
 <h2>Résultat diagnostique</h2>
 <div class="result-box">
   <div class="prob">{pct}% — {risk_text}</div>
@@ -721,9 +744,22 @@ if st.session_state.analyse_lancee and st.session_state.probabilite is not None:
   <table><tr><th>Probabilité</th><th>Niveau de risque</th><th>Confiance modèle</th></tr>
   <tr><td>{pct}%</td><td>{risk_label}</td><td>{confiance:.0f}%</td></tr></table>
 </div>
-<h2>Analyse SHAP — {current['label']}</h2>
+
+<h2>Analyse SHAP globale — {current['label']}</h2>
 {shap_img_tag}
-<div class="disclaimer">... (avertissement) ...</div>
+
+{ '<h2>Analyse SHAP locale</h2>' + local_img_tag if local_img_tag else '' }
+
+<div class="divider"></div>
+<div class="disclaimer">
+  <strong style="color:rgba(232,237,245,0.55)">Avertissement médical</strong> —
+  Cet outil constitue une aide au diagnostic et ne se substitue en aucun cas
+  au jugement clinique d'un médecin qualifié. Toute décision thérapeutique
+  doit être prise par un professionnel de santé habilité.
+</div>
+<div class="footer">
+  Appendix &nbsp;·&nbsp; Projet CW-GR25 &nbsp;·&nbsp; 2025 &nbsp;·&nbsp; Usage médical supervisé uniquement
+</div>
 </body>
 </html>"""
 
@@ -734,7 +770,7 @@ if st.session_state.analyse_lancee and st.session_state.probabilite is not None:
     with dl_col2:
         if img_exists:
             with open(img_path, "rb") as f:
-                st.download_button("🖼️ Télécharger l'image SHAP", f.read(),
+                st.download_button("🖼️ Télécharger l'image SHAP globale", f.read(),
                                    file_name=os.path.basename(img_path), mime="image/png", use_container_width=True)
         else:
             st.button("🖼️ Image SHAP non disponible", disabled=True, use_container_width=True)

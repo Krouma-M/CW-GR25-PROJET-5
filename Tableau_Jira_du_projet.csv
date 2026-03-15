@@ -1,0 +1,15 @@
+﻿Type de ticket,Clé de ticket,ID de ticket,Résumé,Personne assignée,ID de la personne assignée,Champs personnalisés (Start date),Champs personnalisés (End Date),Priorité,État,Résolution,Création
+Tâche,KAN-3,10002, importation et exploration du dataset,Mamady Kourouma,712020:72324bfe-4a0f-4054-8a71-ec8ccdda3fea,09/mars/26 12:00 AM,09/mars/26 12:00 AM,Medium,Terminé(e),Terminé,10/mars/26 10:48 AM
+Tâche,KAN-2,10001,Analyse exploratoire des données,Berthé Mamadou,712020:e31a50a1-170a-4c04-bfa0-d58dedfb6a4c,09/mars/26 12:00 AM,10/mars/26 12:00 AM,Medium,Terminé(e),Terminé,10/mars/26 10:42 AM
+Tâche,KAN-4,10003,Prétraitement des données,Mamady Kourouma,712020:72324bfe-4a0f-4054-8a71-ec8ccdda3fea,10/mars/26 12:00 AM,11/mars/26 12:00 AM,Medium,Terminé(e),Terminé,10/mars/26 10:48 AM
+Tâche,KAN-6,10005,Entraînement du modèle,Mohamed Islam OUJBAIR,712020:ef1a12e4-92e7-4ba1-88f5-6f6901247b12,11/mars/26 12:00 AM,12/mars/26 12:00 AM,Medium,Terminé(e),Terminé,10/mars/26 10:49 AM
+Tâche,KAN-5,10004,Sélection des algorithmes ML,Mohamed Islam OUJBAIR,712020:ef1a12e4-92e7-4ba1-88f5-6f6901247b12,11/mars/26 12:00 AM,11/mars/26 12:00 AM,Medium,Terminé(e),Terminé,10/mars/26 10:48 AM
+Tâche,KAN-18,10057,Visualisation et interprétation,Mamoudou Sissoko,712020:ba3207ab-cb6f-4cd7-bb39-ad6f1747be00,12/mars/26 12:00 AM,13/mars/26 12:00 AM,Medium,Terminé(e),Terminé,14/mars/26 3:14 PM
+Tâche,KAN-17,10056,Développement de l’interface Streamlit,Mamoudou Sissoko,712020:ba3207ab-cb6f-4cd7-bb39-ad6f1747be00,12/mars/26 12:00 AM,13/mars/26 12:00 AM,Medium,Terminé(e),Terminé,14/mars/26 3:14 PM
+Tâche,KAN-16,10055,Implémentation de SHAP,Mohamed Islam OUJBAIR,712020:ef1a12e4-92e7-4ba1-88f5-6f6901247b12,12/mars/26 12:00 AM,13/mars/26 12:00 AM,Medium,Terminé(e),Terminé,14/mars/26 3:13 PM
+Tâche,KAN-7,10006,Évaluation du modèle,Mamady Kourouma,712020:72324bfe-4a0f-4054-8a71-ec8ccdda3fea,12/mars/26 12:00 AM,12/mars/26 12:00 AM,Medium,Terminé(e),Terminé,10/mars/26 10:49 AM
+Tâche,KAN-22,10061,Documentation du projet,Appolinaire Pengdwendé YAMEOGO,712020:a1dcac1f-6748-465b-956a-2ef8658632ef,13/mars/26 12:00 AM,13/mars/26 12:00 AM,Medium,Terminé(e),Terminé,14/mars/26 3:15 PM
+Tâche,KAN-21,10060,CI/CD et automatisation,Appolinaire Pengdwendé YAMEOGO,712020:a1dcac1f-6748-465b-956a-2ef8658632ef,13/mars/26 12:00 AM,13/mars/26 12:00 AM,Medium,Terminé(e),Terminé,14/mars/26 3:15 PM
+Tâche,KAN-20,10059,Tests du modèle,Mohamed Islam OUJBAIR,712020:ef1a12e4-92e7-4ba1-88f5-6f6901247b12,13/mars/26 12:00 AM,13/mars/26 12:00 AM,Medium,Terminé(e),Terminé,14/mars/26 3:15 PM
+Tâche,KAN-19,10058,Tests du prétraitement,Berthé Mamadou,712020:e31a50a1-170a-4c04-bfa0-d58dedfb6a4c,13/mars/26 12:00 AM,13/mars/26 12:00 AM,Medium,Terminé(e),Terminé,14/mars/26 3:14 PM
+Tâche,KAN-23,10062,Déploiement de l’application,,,14/mars/26 12:00 AM,14/mars/26 12:00 AM,Medium,Terminé(e),Terminé,14/mars/26 3:15 PM
