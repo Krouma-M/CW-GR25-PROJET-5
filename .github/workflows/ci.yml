@@ -22,6 +22,21 @@ jobs:
       - name: 📦 Install dependencies
         run: pip install -r requirements.txt
 
+      - name: 📊 Download dataset
+        env:
+          PYTHONPATH: ./src
+        run: python src/download_data.py
+
+      - name: ⚙️ Preprocess data
+        env:
+          PYTHONPATH: ./src
+        run: python src/data_processing.py
+
+      - name: 🤖 Train models
+        env:
+          PYTHONPATH: ./src
+        run: python src/train_model.py
+
       - name: 🧪 Run tests
         env:
           PYTHONPATH: ./src
