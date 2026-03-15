@@ -147,8 +147,6 @@ python src/train_model.py
 **Lancer l'application :**
 ```bash
 streamlit run app/app.py
-    ou
-avec python directement : python3 -m streamlit run app.py
 ```
 L'application s'ouvre automatiquement sur `http://localhost:8501`
 
