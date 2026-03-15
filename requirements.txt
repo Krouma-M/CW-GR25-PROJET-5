@@ -1,21 +1,10 @@
-asgiref
-certifi
-charset-normalizer
-Django>= 4.2
-docopt
-idna
-pipreqs
-requests
-sqlparse
-tzdata
-urllib3
-yarg
 pandas
+numpy
 scikit-learn
 lightgbm
 catboost
+shap
 ucimlrepo
-shap
 joblib
-base64
-shap
+streamlit
+matplotlib

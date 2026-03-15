@@ -315,7 +315,7 @@ Graphiques sauvegardés dans `reports/figures/shap/`
 
 ---
 
-## ❓ Questions critiques
+## ❓ Questions importantes
 
 **Le dataset était-il équilibré ?**  
 Oui, le dataset est approximativement équilibré (~50% appendicite, ~50% pas d'appendicite). Aucune technique de rééquilibrage (SMOTE, undersampling) n'a été nécessaire.
@@ -341,7 +341,7 @@ D'après l'analyse SHAP, les features les plus importantes sont : Appendix_on_US
 
 ## 👥 Équipe
 
-| Membre | Rôle |
+| Membres | Rôles |
 |--------|------|
 | Mamady KOUROUMA | Interface Streamlit & Tests automatisés |
 | Appolinaire YAMEOGO | EDA, CI/CD & Documentation |
