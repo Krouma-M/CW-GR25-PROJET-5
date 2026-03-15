@@ -30,22 +30,41 @@ Compte tenu du contexte médical critique, chaque prédiction est accompagnée d
 
 ```
 CW-GR25-PROJET-5/
-├── data/                        # Dataset brut
-├── notebooks/
-│   └── eda.ipynb                # Analyse exploratoire des données
-├── src/
-│   ├── data_processing.py       # Prétraitement et optimisation mémoire
-│   ├── train_model.py           # Entraînement des modèles ML
-│   ├── evaluate.py              # Évaluation et métriques
-│   └── shap1.py                 # Explicabilité SHAP
-├── app/
-│   └── app.py                   # Interface Streamlit
-├── tests/
-│   ├── test_data_processing.py  # Tests du prétraitement
-│   └── test_model.py            # Tests du modèle
 ├── .github/
 │   └── workflows/
-│       └── ci.yml               # Pipeline CI/CD (GitHub Actions)
+│       └── ci.yml                    # Pipeline CI/CD (GitHub Actions)
+├── app/
+│   ├── explications/                 # Explications SHAP pour l'interface
+│   ├── images/                       # Assets visuels de l'application
+│   └── app.py                        # Interface Streamlit
+├── data/
+│   └── raw/
+│       └── appendicitis.csv          # Dataset brut
+├── models/
+│   ├── best_model.pkl                # Meilleur modèle sélectionné (CatBoost)
+│   ├── CatBoost.pkl                  # Modèle CatBoost
+│   ├── LightGBM.pkl                  # Modèle LightGBM
+│   ├── Random Forest.pkl             # Modèle Random Forest
+│   ├── columns.pkl                   # Colonnes du dataset
+│   ├── pipeline.pkl                  # Pipeline de prétraitement
+│   └── explainer.pkl                 # Explainer SHAP
+├── notebooks/
+│   └── eda.ipynb                     # Analyse exploratoire des données
+├── reports/
+│   └── figures/
+│       ├── eda/                      # Graphiques EDA
+│       └── shap/                     # Graphiques SHAP
+├── src/
+│   ├── data_processing.py            # Prétraitement et optimisation mémoire
+│   ├── download_data.py              # Téléchargement du dataset UCI
+│   ├── evaluate.py                   # Évaluation et métriques
+│   ├── shap1.py                      # Explicabilité SHAP
+│   └── train_model.py                # Entraînement des modèles ML
+├── tests/
+│   ├── test_data_processing.py       # Tests du prétraitement
+│   └── test_model.py                 # Tests du modèle
+├── create_explainer.py               # Script de création de l'explainer SHAP
+├── Tableau_Jira_du_projet.csv        # Suivi des tâches Jira
 ├── requirements.txt
 └── README.md
 ```
@@ -267,7 +286,7 @@ python src/shap1.py
 | 9 | Surrounding_Tissue_Reaction | 0.1885 |
 | 10 | Free_Fluids | 0.1795 |
 
-Graphiques sauvegardés dans `figures/shap/`
+Graphiques sauvegardés dans `reports/figures/shap/`
 
 ---
 
@@ -296,7 +315,7 @@ Graphiques sauvegardés dans `figures/shap/`
 
 ---
 
-## ❓ Questions importants
+## ❓ Questions critiques
 
 **Le dataset était-il équilibré ?**  
 Oui, le dataset est approximativement équilibré (~50% appendicite, ~50% pas d'appendicite). Aucune technique de rééquilibrage (SMOTE, undersampling) n'a été nécessaire.
@@ -328,7 +347,7 @@ D'après l'analyse SHAP, les features les plus importantes sont : Appendix_on_US
 | Appolinaire YAMEOGO | EDA, CI/CD & Documentation |
 | Mamoudou SISSOKO | Interface Streamlit & Gestion Tableau Jira |
 | Islam Mohamed OUJBAIR | Prétraitement des données & Modélisation ML |
-| Mamadou BRETHE | Prétraitement des données & Modélisation ML |
+| Mamadou BERTHE | Prétraitement des données & Modélisation ML |
 
 ---
 
