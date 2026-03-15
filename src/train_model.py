@@ -14,6 +14,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 import lightgbm as lgb
 import catboost as cb
+import joblib
+import os
+
+# Créer le dossier pour les modèles
+os.makedirs("models", exist_ok=True)
 
 print("Script lancé...")
 
@@ -66,6 +71,10 @@ grid_rf.fit(X_train, y_train)
 best_rf = grid_rf.best_estimator_
 y_pred_rf = best_rf.predict(X_test)
 
+# Sauvegarder le modèle Random Forest
+joblib.dump(best_rf, "models/random_forest_model.pkl")
+print("  -> Modèle sauvegardé: models/random_forest_model.pkl")
+
 # -------------------------------
 # 2. LightGBM avec GridSearchCV
 print("Entraînement LightGBM...")
@@ -80,6 +89,10 @@ grid_lgb.fit(X_train, y_train)
 best_lgb = grid_lgb.best_estimator_
 y_pred_lgb = best_lgb.predict(X_test)
 
+# Sauvegarder le modèle LightGBM
+joblib.dump(best_lgb, "models/lightgbm_model.pkl")
+print("  -> Modèle sauvegardé: models/lightgbm_model.pkl")
+
 # -------------------------------
 # 3. CatBoost avec GridSearchCV
 print("Entraînement CatBoost...")
@@ -93,6 +106,14 @@ grid_cat = GridSearchCV(cat, param_grid_cat, cv=5, scoring="f1", n_jobs=-1)
 grid_cat.fit(X_train, y_train)
 best_cat = grid_cat.best_estimator_
 y_pred_cat = best_cat.predict(X_test)
+
+# Sauvegarder le modèle CatBoost
+best_cat.save_model("models/catboost_model.cbm")
+print("  -> Modèle sauvegardé: models/catboost_model.cbm")
+
+# Sauvegarder le LabelEncoder
+joblib.dump(le_target, "models/label_encoder.pkl")
+print("  -> LabelEncoder sauvegardé: models/label_encoder.pkl")
 
 
 # -------------------------------
@@ -115,4 +136,13 @@ evaluate_model("CatBoost", y_test, y_pred_cat)
 print("\nMeilleurs paramètres RF:", grid_rf.best_params_)
 print("Meilleurs paramètres LGBM:", grid_lgb.best_params_)
 print("Meilleurs paramètres CatBoost:", grid_cat.best_params_)
-print("Fin du script")
+
+print("\n" + "=" * 50)
+print("MODÈLES SAUVEGARDÉS")
+print("=" * 50)
+print("Tous les modèles ont été enregistrés dans le dossier 'models/':")
+print("  - models/random_forest_model.pkl")
+print("  - models/lightgbm_model.pkl")
+print("  - models/catboost_model.cbm")
+print("  - models/label_encoder.pkl")
+print("\nFin du script")
