@@ -5,7 +5,7 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from data_processing import load_data, preprocess_data, get_data_summary
+from data_processing import load_data, preprocess_data, get_data_summary, optimize_memory
 
 # TEST 1 — Vérifier que les données se chargent bien
 def test_load_data():
@@ -42,15 +42,25 @@ def test_data_summary():
     assert summary["n_rows"] > 0
     print(" test_data_summary passé !")
 
-# TEST 5 — Vérifier le chargement du modèle
-def test_load_model():
+# TEST 5 — Vérifier optimize_memory
+def test_optimize_memory():
+    df = load_data()
+    df_numeric = df.select_dtypes(include=["float64", "int64"])
+    before = df_numeric.memory_usage(deep=True).sum()
+    df_optimized = optimize_memory(df_numeric.copy())
+    after = df_optimized.memory_usage(deep=True).sum()
+    assert after <= before
+    print(" test_optimize_memory passé !")
+
+# TEST 6 — Vérifier le chargement du meilleur modèle
+def test_load_best_model():
     import joblib
     model_path = os.path.join(
-        os.path.dirname(__file__), '..', 'models', 'LightGBM.pkl'
+        os.path.dirname(__file__), '..', 'models', 'best_model.pkl'
     )
     if os.path.exists(model_path):
         model = joblib.load(model_path)
         assert model is not None
-        print(" test_load_model passé !")
+        print(" test_load_best_model passé !")
     else:
-        pytest.skip("Modèle pas encore entraîné")
+        pytest.skip("best_model.pkl pas encore généré — lance evaluate.py d'abord !")
