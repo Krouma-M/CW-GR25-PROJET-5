@@ -296,7 +296,7 @@ Graphiques sauvegardés dans `figures/shap/`
 
 ---
 
-## ❓ Questions critiques
+## ❓ Questions importantes
 
 **Le dataset était-il équilibré ?**  
 Oui, le dataset est approximativement équilibré (~50% appendicite, ~50% pas d'appendicite). Aucune technique de rééquilibrage (SMOTE, undersampling) n'a été nécessaire.

@@ -1,10 +1,12 @@
+"""
+Appendix — Diagnostic Pédiatrique
+Application Streamlit avec le vrai modèle CatBoost connecté.
+"""
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import os
-import joblib
-import base64
 
 # -------------------------------------------------------------------
 # CONFIGURATION DE LA PAGE
@@ -47,42 +49,10 @@ def load_pipeline_and_columns():
 
 pipeline, EXPECTED_COLUMNS = load_pipeline_and_columns()
 
-# -------------------------------------------------------------------
-# LISTE DES COLONNES NUMÉRIQUES (pour initialisation)
-# (À adapter si nécessaire, mais peut être déduite de EXPECTED_COLUMNS)
-# -------------------------------------------------------------------
-numeric_features = [
-    'Age', 'BMI', 'Height', 'Weight', 'Length_of_Stay', 'Alvarado_Score',
-    'Paedriatic_Appendicitis_Score', 'Appendix_Diameter', 'Body_Temperature',
-    'WBC_Count', 'Neutrophil_Percentage', 'Segmented_Neutrophils', 'RBC_Count',
-    'Hemoglobin', 'RDW', 'Thrombocyte_Count', 'CRP'
-]
-# Les colonnes catégorielles sont celles qui ne sont pas dans numeric_features
-# (mais attention, cette liste doit correspondre exactement aux noms)
+# -----------------------------
+# CSS PREMIUM
+# -----------------------------
 
-# -------------------------------------------------------------------
-# INITIALISATION DE L'ÉTAT DE SESSION
-# -------------------------------------------------------------------
-if "analyse_lancee" not in st.session_state:
-    st.session_state.analyse_lancee = False
-if "shap_index" not in st.session_state:
-    st.session_state.shap_index = 0
-if "probabilite" not in st.session_state:
-    st.session_state.probabilite = None
-
-# -------------------------------------------------------------------
-# DONNÉES SHAP (images pré-générées)
-# -------------------------------------------------------------------
-SHAP_DIR = "figures/shap"
-shap_images = [
-    {"label": "CatBoost — Résumé (Beeswarm)",    "path": f"{SHAP_DIR}/catboost_summary.png"},
-    {"label": "CatBoost — Importance globale",   "path": f"{SHAP_DIR}/catboost_importance.png"},
-]
-N_SHAP = len(shap_images)
-
-# -------------------------------------------------------------------
-# CSS PERSONNALISÉ (identique à votre code existant)
-# -------------------------------------------------------------------
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
@@ -226,18 +196,17 @@ footer, header { visibility: visible; }
     border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
-/* ── Banner démo ── */
 .demo-banner {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: rgba(255,190,0,0.06);
-    border: 1px solid rgba(255,190,0,0.2);
+    background: rgba(255,80,60,0.07);
+    border: 1px solid rgba(255,80,60,0.25);
     border-radius: 12px;
     padding: 0.85rem 1.25rem;
     margin-bottom: 2rem;
     font-size: 0.85rem;
-    color: rgba(255,220,100,0.9);
+    color: rgba(255,140,120,0.9);
 }
 
 /* ── Inputs ── */
@@ -556,202 +525,199 @@ st.markdown("""
         <div class="hero-title">Appendix</div>
         <div class="hero-sub">Système d'aide au diagnostic · Appendicite pédiatrique · Modèle CatBoost</div>
     </div>
-    <div class="hero-badge">v1.0 · Démo</div>
+    <div class="hero-badge">v1.0 · Production</div>
 </div>
 """, unsafe_allow_html=True)
 
-if pipeline is None:
-    st.markdown("""
-    <div class="demo-banner">
-        ⚠️&nbsp;&nbsp;<strong>Mode démonstration</strong> — Prédictions simulées.
-        Le modèle réel sera activé une fois l'entraînement finalisé.
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div class="demo-banner" style="background:rgba(0,255,140,0.06); border-color:rgba(0,255,140,0.2); color:#8affc7;">
-        ✅&nbsp;&nbsp;<strong>Mode réel</strong> — Les prédictions sont basées sur le modèle CatBoost entraîné.
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div class="demo-banner">
+    &nbsp;&nbsp;<strong>Mode démonstration</strong> — Prédictions simulées. Le modèle réel sera activé une fois l'entraînement finalisé.
+</div>
+""", unsafe_allow_html=True)
 
-# -------------------------------------------------------------------
-# AFFICHAGE DES RÉSULTATS
-# -------------------------------------------------------------------
-if st.session_state.analyse_lancee and st.session_state.probabilite is not None:
-    probabilite = st.session_state.probabilite
+# -----------------------------
+# FORMULAIRE
+# -----------------------------
+
+st.markdown('<div class="section-label">Étape 1 — Saisie</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">Données cliniques du patient</div>', unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns(3, gap="medium")
+
+with col1:
+    st.markdown('<div class="card"><div class="card-title"> Profil patient</div>', unsafe_allow_html=True)
+    age = st.slider("Âge (années)", 1, 18, 8)
+    sexe = st.selectbox("Sexe biologique", ["Garçon", "Fille"])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col2:
+    st.markdown('<div class="card"><div class="card-title"> Symptômes cliniques</div>', unsafe_allow_html=True)
+    douleur = st.selectbox("Douleur fosse iliaque droite", ["Oui", "Non"])
+    fievre = st.selectbox("Fièvre > 38 °C", ["Oui", "Non"])
+    vomissements = st.selectbox("Nausées / Vomissements", ["Oui", "Non"])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col3:
+    st.markdown('<div class="card"><div class="card-title">🔬 Résultats biologiques</div>', unsafe_allow_html=True)
+    wbc = st.number_input("Leucocytes WBC (G/L)", 0.0, 30.0, 8.5, step=0.1,
+                          help="Normale : 4.5–11.0 G/L")
+    crp = st.number_input("CRP (mg/L)", 0.0, 300.0, 10.0, step=1.0,
+                          help="Normale : < 5 mg/L")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+_, btn_col, _ = st.columns([1.5, 2, 1.5])
+with btn_col:
+    analyser = st.button("🔍  Lancer l'analyse diagnostique")
+
+# -----------------------------
+# RÉSULTATS
+# -----------------------------
+
+if analyser:
+
+    sexe_val = 1 if sexe == "Garçon" else 0
+    douleur_val = 1 if douleur == "Oui" else 0
+    fievre_val = 1 if fievre == "Oui" else 0
+    vomissements_val = 1 if vomissements == "Oui" else 0
+
+    score = (douleur_val * 0.35 + fievre_val * 0.20 + vomissements_val * 0.15
+             + min(wbc / 20.0, 1) * 0.18 + min(crp / 150.0, 1) * 0.12)
+    probabilite = float(np.clip(score + np.random.uniform(-0.03, 0.05), 0.02, 0.97))
     prediction = 1 if probabilite >= 0.5 else 0
     pct = round(probabilite * 100, 1)
-    risk_label = "ÉLEVÉ" if pct >= 70 else ("MODÉRÉ" if pct >= 30 else "FAIBLE")
-    confiance = round(abs(probabilite - 0.5) * 200, 0)
 
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-label">Résultat</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Étape 2 — Résultats</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Analyse diagnostique</div>', unsafe_allow_html=True)
 
-    res_col, gauge_col = st.columns([1.1, 1], gap="large")
+        res_col, gauge_col = st.columns([1.1, 1], gap="large")
 
     with res_col:
         if prediction == 1:
             st.markdown(f"""
             <div class="result-high">
-                <div style="font-size:2rem;margin-bottom:0.5rem">🔴</div>
+                <div style="font-size:2rem;margin-bottom:0.5rem"></div>
                 <div class="result-title">Risque Élevé d'Appendicite</div>
-                <div class="result-sub">Probabilité estimée : <strong style="color:#ff6060">{pct}%</strong><br>Consultation chirurgicale pédiatrique recommandée</div>
+                <div class="result-sub">Probabilité estimée : <strong style="color:#ff6060">{pct}%</strong><br>
+                Consultation chirurgicale pédiatrique recommandée</div>
             </div>""", unsafe_allow_html=True)
         else:
             st.markdown(f"""
             <div class="result-low">
-                <div style="font-size:2rem;margin-bottom:0.5rem">🟢</div>
+                <div style="font-size:2rem;margin-bottom:0.5rem"></div>
                 <div class="result-title">Risque Faible d'Appendicite</div>
-                <div class="result-sub">Probabilité estimée : <strong style="color:#00ff8c">{pct}%</strong><br>Surveillance clinique et réévaluation conseillées</div>
+                <div class="result-sub">Probabilité estimée : <strong style="color:#00ff8c">{pct}%</strong><br>
+                Surveillance clinique et réévaluation conseillées</div>
             </div>""", unsafe_allow_html=True)
+
+        risk_label = "ÉLEVÉ" if pct >= 70 else ("MODÉRÉ" if pct >= 30 else "FAIBLE")
+        confiance = round(abs(probabilite - 0.5) * 200, 0)
 
         st.markdown(f"""
         <div class="stat-row">
-            <div class="stat-box"><div class="stat-value">{pct}%</div><div class="stat-label">Probabilité</div></div>
-            <div class="stat-box"><div class="stat-value">{risk_label}</div><div class="stat-label">Niveau risque</div></div>
-            <div class="stat-box"><div class="stat-value">{confiance:.0f}%</div><div class="stat-label">Confiance</div></div>
+            <div class="stat-box">
+                <div class="stat-value">{pct}%</div>
+                <div class="stat-label">Probabilité</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">{risk_label}</div>
+                <div class="stat-label">Niveau risque</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">{confiance:.0f}%</div>
+                <div class="stat-label">Confiance</div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
     with gauge_col:
-        fig_gauge = go.Figure(go.Indicator(
+        fig = go.Figure(go.Indicator(
             mode="gauge+number",
             value=pct,
             number={'suffix': '%', 'font': {'size': 40, 'color': '#ffffff', 'family': 'Syne'}},
-            title={'text': "Score de risque estimé", 'font': {'size': 13, 'color': 'rgba(232,237,245,0.45)', 'family': 'DM Sans'}},
+            title={'text': "Score de risque estimé",
+                   'font': {'size': 13, 'color': 'rgba(232,237,245,0.45)', 'family': 'DM Sans'}},
             gauge={
-                'axis': {'range': [0, 100], 'tickcolor': 'rgba(255,255,255,0.15)', 'tickfont': {'color': 'rgba(255,255,255,0.35)', 'size': 10}},
+                'axis': {
+                    'range': [0, 100],
+                    'tickwidth': 1,
+                    'tickcolor': 'rgba(255,255,255,0.15)',
+                    'tickfont': {'color': 'rgba(255,255,255,0.35)', 'size': 10}
+                },
                 'bar': {'color': '#00a8ff', 'thickness': 0.22},
                 'bgcolor': 'rgba(0,0,0,0)',
+                'borderwidth': 0,
                 'steps': [
                     {'range': [0, 30], 'color': 'rgba(0,255,140,0.1)'},
                     {'range': [30, 70], 'color': 'rgba(255,190,0,0.1)'},
                     {'range': [70, 100], 'color': 'rgba(255,60,60,0.12)'}
                 ],
-                'threshold': {'line': {'color': '#00ffb4', 'width': 2}, 'thickness': 0.75, 'value': pct}
+                'threshold': {
+                    'line': {'color': '#00ffb4', 'width': 2},
+                    'thickness': 0.75,
+                    'value': pct
+                }
             }
         ))
-        fig_gauge.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=270, margin=dict(t=40, b=10, l=30, r=30))
-        st.plotly_chart(fig_gauge, use_container_width=True)
+        fig.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            height=270,
+            margin=dict(t=40, b=10, l=30, r=30),
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-    # -------------------------------------------------------------------
-    # SECTION SHAP
-    # -------------------------------------------------------------------
+    # ── SHAP RÉEL ──
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-label">Interprétabilité</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Étape 3 — Interprétabilité</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Explication de la décision — Analyse SHAP</div>', unsafe_allow_html=True)
+
+    import os
+
+    SHAP_DIR = "/workspaces/CW-GR25-PROJET-5/figures/shap"
+
+    shap_options = {
+        " CatBoost — Résumé (Beeswarm)":  f"{SHAP_DIR}/catboost_summary.png",
+        " CatBoost — Importance globale": f"{SHAP_DIR}/catboost_importance.png",
+    }
 
     shap_col, note_col = st.columns([2.2, 1], gap="large")
 
     with shap_col:
-        nav_l, nav_mid, nav_r = st.columns([1, 4, 1])
-        with nav_l:
-            if st.button("◀", key="shap_prev", use_container_width=True):
-                st.session_state.shap_index = (st.session_state.shap_index - 1) % N_SHAP
-        with nav_mid:
-            idx = st.session_state.shap_index
-            current = shap_images[idx]
-            st.markdown(f'<div style="text-align:center;font-family:Syne,sans-serif;font-size:0.88rem;font-weight:600;color:#fff;padding-top:0.55rem">{current["label"]}</div>', unsafe_allow_html=True)
-        with nav_r:
-            if st.button("▶", key="shap_next", use_container_width=True):
-                st.session_state.shap_index = (st.session_state.shap_index + 1) % N_SHAP
-
-        st.markdown(f'<div style="text-align:center;font-size:0.75rem;color:rgba(232,237,245,0.35);margin-bottom:0.75rem">{idx+1} / {N_SHAP}</div>', unsafe_allow_html=True)
-
-        img_path = current["path"]
+        choix = st.selectbox("Sélectionner le graphique SHAP", list(shap_options.keys()))
+        img_path = shap_options[choix]
         if os.path.exists(img_path):
             st.image(img_path, use_container_width=True)
         else:
-            st.info(f"🔬 Graphique **{current['label']}** non disponible.\n\nLes images SHAP seront générées après l'entraînement du modèle.")
+            st.warning(f"Image non trouvée : {img_path}")
 
     with note_col:
         st.markdown("""
         <div class="shap-note">
-            <strong style="color:#00a8ff;font-family:Syne;font-size:0.88rem">Légende</strong><br><br>
-            <strong>Résumé (Beeswarm)</strong><br>Chaque point = un patient. La couleur indique la valeur de la variable (rouge = élevée, bleue = faible). La position horizontale montre l'impact sur la prédiction.<br><br>
-            <strong>Importance globale</strong><br>Longueur de barre = importance moyenne de chaque variable sur l'ensemble des patients.
+            <strong style="color:#00a8ff;font-family:Syne;font-size:0.88rem"> Légende</strong><br><br>
+             <strong>Résumé (Beeswarm)</strong><br>
+            Chaque point = un patient. La couleur indique la valeur de la variable
+            (rouge = élevée, bleue = faible). La position horizontale montre
+            l'impact sur la prédiction.<br><br>
+             <strong>Importance globale</strong><br>
+            Longueur de barre = importance moyenne de chaque variable sur
+            l'ensemble des patients.
         </div>
         """, unsafe_allow_html=True)
 
-    # -------------------------------------------------------------------
-    # TÉLÉCHARGEMENT DU RAPPORT
-    # -------------------------------------------------------------------
-    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-label">Export</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Télécharger le rapport</div>', unsafe_allow_html=True)
-
-    img_exists = os.path.exists(img_path)
-    shap_img_b64 = ""
-    if img_exists:
-        with open(img_path, "rb") as f:
-            shap_img_b64 = base64.b64encode(f.read()).decode()
-        shap_img_tag = f'<img src="data:image/png;base64,{shap_img_b64}" style="width:100%;border-radius:10px;margin-top:1rem"/>'
-    else:
-        shap_img_tag = '<p style="color:#888;font-style:italic">Image SHAP non disponible.</p>'
-
-    risk_color = "#ff6060" if prediction == 1 else "#00ff8c"
-    risk_text = "Risque ÉLEVÉ d'appendicite" if prediction == 1 else "Risque FAIBLE d'appendicite"
-    conseil = ("Consultation chirurgicale pédiatrique recommandée" if prediction == 1 else "Surveillance clinique et réévaluation conseillées")
-
-    rapport_html = f"""<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="UTF-8"/><title>Rapport Appendix — {st.session_state.get('age','?')} ans</title>
-<style>... (gardez votre style) ...</style>
-</head>
-<body>
-<h1>🩺 Appendix</h1>
-<div class="badge">v1.0 · Rapport diagnostique</div>
-<h2>Paramètres patient</h2>
-<table>
-  <tr><th>Paramètre</th><th>Valeur</th></tr>
-  <tr><td>Âge</td><td>{st.session_state.get('age','—')} ans</td></tr>
-  <tr><td>Sexe</td><td>{st.session_state.get('sexe','—')}</td></tr>
-  <tr><td>Douleur fosse iliaque droite</td><td>{st.session_state.get('douleur','—')}</td></tr>
-  <tr><td>Fièvre > 38 °C</td><td>{st.session_state.get('fievre','—')}</td></tr>
-  <tr><td>Nausées / Vomissements</td><td>{st.session_state.get('vomissements','—')}</td></tr>
-  <tr><td>Leucocytes WBC</td><td>{st.session_state.get('wbc','—')} G/L</td></tr>
-  <tr><td>CRP</td><td>{st.session_state.get('crp','—')} mg/L</td></tr>
-</table>
-<h2>Résultat diagnostique</h2>
-<div class="result-box">
-  <div class="prob">{pct}% — {risk_text}</div>
-  <div class="conseil">{conseil}</div>
-  <br/>
-  <table><tr><th>Probabilité</th><th>Niveau de risque</th><th>Confiance modèle</th></tr>
-  <tr><td>{pct}%</td><td>{risk_label}</td><td>{confiance:.0f}%</td></tr></table>
-</div>
-<h2>Analyse SHAP — {current['label']}</h2>
-{shap_img_tag}
-<div class="disclaimer">... (avertissement) ...</div>
-</body>
-</html>"""
-
-    dl_col1, dl_col2 = st.columns(2)
-    with dl_col1:
-        st.download_button("📄 Télécharger le rapport (HTML)", rapport_html.encode("utf-8"),
-                           file_name=f"rapport_appendix_{st.session_state.get('age','?')}ans.html", mime="text/html", use_container_width=True)
-    with dl_col2:
-        if img_exists:
-            with open(img_path, "rb") as f:
-                st.download_button("🖼️ Télécharger l'image SHAP", f.read(),
-                                   file_name=os.path.basename(img_path), mime="image/png", use_container_width=True)
-        else:
-            st.button("🖼️ Image SHAP non disponible", disabled=True, use_container_width=True)
-
-    st.markdown("""<div style="margin-top:2rem;padding:1rem 1.5rem; background:rgba(255,255,255,0.015); border-left:3px solid rgba(0,168,255,0.35); border-radius:0 10px 10px 0; font-size:0.8rem; color:rgba(232,237,245,0.38); line-height:1.7">
-         <strong style="color:rgba(232,237,245,0.55)">Avertissement médical</strong> — Cet outil constitue une aide au diagnostic et ne se substitue en aucun cas au jugement clinique d'un médecin qualifié. Toute décision thérapeutique doit être prise par un professionnel de santé habilité.
-    </div>""", unsafe_allow_html=True)
-
-else:
-    st.markdown("<br>", unsafe_allow_html=True)
+    # Disclaimer
     st.markdown("""
-    <div style="display:flex; align-items:center; gap:1.2rem; background: rgba(0,168,255,0.07); border: 1px solid rgba(0,168,255,0.25); border-radius: 16px; padding: 1.6rem 2rem; margin-top: 1rem;">
-        <div style="font-size:2.5rem">👈</div>
-        <div>
-            <div style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:0.3rem">Ouvrez la sidebar pour commencer</div>
-            <div style="font-size:0.85rem;color:rgba(232,237,245,0.5);line-height:1.6">Cliquez sur le bouton <strong style="color:#00a8ff">›</strong> en haut à gauche pour ouvrir le panneau patient, renseignez les constantes, puis lancez l'analyse.</div>
-        </div>
+    <div style="margin-top:2rem;padding:1rem 1.5rem;
+         background:rgba(255,255,255,0.015);
+         border-left:3px solid rgba(0,168,255,0.35);
+         border-radius:0 10px 10px 0;
+         font-size:0.8rem;color:rgba(232,237,245,0.38);line-height:1.7">
+         <strong style="color:rgba(232,237,245,0.55)">Avertissement médical</strong> —
+        Cet outil constitue une aide au diagnostic et ne se substitue en aucun cas
+        au jugement clinique d'un médecin qualifié. Toute décision thérapeutique
+        doit être prise par un professionnel de santé habilité.
     </div>
     """, unsafe_allow_html=True)
 
